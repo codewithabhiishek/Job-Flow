@@ -6,6 +6,7 @@ This document outlines the high-level architecture, data flow, and underlying lo
 
 Job Flow utilizes a modern, decoupled architecture:
 - **Frontend:** React + Vite, styled with Tailwind CSS and Shadcn UI components.
+- **State Management:** `@tanstack/react-query` for all server state caching, background refetching, and optimistic updates.
 - **Backend:** Node.js + Express.js API.
 - **Database:** Neon (Serverless PostgreSQL) managed via Drizzle ORM.
 - **Authentication:** Clerk.
@@ -26,10 +27,10 @@ Job Flow utilizes a modern, decoupled architecture:
 - **Endpoints:**
   - `GET /api/jobs`: Fetches all jobs belonging to the authenticated user.
   - `POST /api/jobs`: Creates a new job entry.
-  - `PUT /api/jobs/:id`: Updates an existing job (e.g., when dragging a card in the Kanban board).
+  - `PUT /api/jobs/:id`: Updates an existing job (e.g., when dragging a card in the Kanban board). Secured with IDOR prevention checks.
   - `DELETE /api/jobs/:id`: Removes a job.
   - `POST /api/upload`: Handles file uploads (resumes/screenshots).
-  - `POST /api/ai/invoke`: Triggers AI processing.
+  - `POST /api/ai/invoke`: Triggers AI processing. Secured with SSRF protections for URL fetching.
 
 ### 2.3 Database Layer (Drizzle + Neon)
 - **Schema (`server/schema.js`):** Defines the exact PostgreSQL table structure, including types (text, boolean, timestamp, jsonb for arrays like `skills`).
@@ -40,11 +41,12 @@ Job Flow utilizes a modern, decoupled architecture:
 ## 3. Core Logic & Calculations
 
 ### 3.1 Kanban Board (`Kanban.jsx`)
-- **State:** Jobs are grouped locally by their `status` field (`saved`, `applied`, `interviewing`, `offer`, `rejected`).
+- **State:** Jobs are grouped locally by their `status` field. Driven exclusively by React Query (`useQuery`).
 - **Drag & Drop:** Utilizes `@hello-pangea/dnd`. When a job card is dropped into a new column:
-  1. The frontend immediately updates the local React state (Optimistic UI update).
-  2. A `PUT` request is dispatched to `/api/jobs/:id` with the new status.
+  1. The frontend immediately updates the local React Query cache (`onMutate` optimistic update).
+  2. A `useMutation` request is dispatched to `PUT /api/jobs/:id` with the new status.
   3. The backend executes an SQL `UPDATE` against the Neon database.
+  4. On success, the mutation automatically invalidates the query cache to ensure absolute sync without page reloads.
 
 ### 3.2 Analytics Dashboard (`Analytics.jsx` & `Dashboard.jsx`)
 - **Calculations:** 
@@ -70,8 +72,13 @@ The most complex feature of the app is extracting structured data from screensho
 4. **Backend Processing (`server/aiProvider.js`):**
    - The `aiProvider` routes the request to a multimodal Large Language Model (e.g., Gemini 1.5 Pro).
    - **Crucial Logic:** The AI is strictly instructed to return data matching a pre-defined JSON Schema (`EXTRACTION_SCHEMA`). This schema forces the LLM to output properties like `company`, `job_title`, `salary`, `skills` (as an array), and `remote` (as a boolean).
-5. **Review & Save:**
+5. **Source Detection & Fallbacks:**
+   - The application supports an automated source inference system.
+   - If the AI detects a job platform from a screenshot (e.g., "LinkedIn"), it populates it.
+   - If the AI fails to determine a platform but extracts a `job_url`, the frontend intercepts the JSON and infers the platform from the domain (`linkedin.com`, `naukri.com`, `greenhouse.io`, etc.).
+   - This ensures the `SourceBadge` always accurately labels the job's origin.
+6. **Review & Save:**
    - The backend responds with the structured JSON object.
    - The frontend parses this JSON and pre-fills an editable form.
    - The user reviews/edits the extracted calculations.
-   - Upon clicking "Save", the final structured object is sent via `POST /api/jobs` and stored in the PostgreSQL database.
+   - Upon clicking "Save", a React Query mutation fires the `POST /api/jobs` payload to the database, followed by an immediate cache invalidation to update all views instantaneously.

@@ -22,11 +22,12 @@
 
 ## ✨ Key Features
 
-- **🧠 AI-Powered Data Extraction:** Automatically parses screenshots, job URLs, or text into a structured schema using Gemini/Minimax via our custom `aiProvider`.
+- **🧠 AI-Powered Data Extraction:** Automatically parses screenshots, job URLs, or text into a structured schema using Gemini/Minimax via our custom `aiProvider`. Features advanced platform inference logic.
 - **🔐 Secure Authentication:** Seamless user login and registration powered by **Clerk**.
-- **🗂️ Drag & Drop Kanban:** Easily move your job applications between statuses (Saved, Applied, Interviewing, Offer, Rejected) with instantaneous optimistic UI updates.
+- **🗂️ Drag & Drop Kanban:** Easily move your job applications between statuses with instantaneous optimistic UI updates powered by **React Query**.
 - **📊 Real-time Analytics:** Visualizes your application progress, hit rate, and active pipelines via dynamic Recharts.
-- **⚡ Blazing Fast Architecture:** Built with Vite and backed by a Serverless Postgres database via Neon and Drizzle ORM.
+- **⚡ Blazing Fast Architecture:** Built with Vite and backed by a Serverless Postgres database via Neon and Drizzle ORM. Optimized with lazy loading and code splitting.
+- **🛡️ Production Security:** Protected against SSRF attacks and fully rate-limited API endpoints.
 
 ---
 
@@ -39,10 +40,12 @@ flowchart TD
     subgraph Frontend [React + Vite Client]
         UI[User Interface / Pages]
         Clerk[Clerk Auth]
+        ReactQuery[React Query Cache]
         APIClient[API Client Fetch]
         
         UI <--> Clerk
-        UI <--> APIClient
+        UI <--> ReactQuery
+        ReactQuery <--> APIClient
     end
     
     subgraph Backend [Express API - port 3001]
