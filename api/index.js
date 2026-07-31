@@ -48,12 +48,17 @@ app.post('/api/jobs', async (req, res) => {
       applied_date, reply_date, interview_date, source
     } = req.body;
 
-    const dbPayload = {
+    const rawPayload = {
       company, logo, job_title, location, salary, employment_type,
       experience, remote: remote || false, skills: skills || [], job_url, deadline, notes, status,
       applied_date, reply_date, interview_date, source,
       user_id: req.auth.userId
     };
+
+    // Explicitly strip undefined values to prevent Drizzle parameter mismatch bugs
+    const dbPayload = Object.fromEntries(
+      Object.entries(rawPayload).filter(([_, v]) => v !== undefined)
+    );
 
     console.log("Validation result (DB payload):", JSON.stringify(dbPayload));
 
