@@ -78,13 +78,17 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
           onChange={cycleTheme} 
         />
 
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[11px] font-medium text-white cursor-pointer hover:opacity-90 transition-opacity overflow-hidden">
-          {user?.avatar_url ? (
-            <img src={user.avatar_url} alt="User Avatar" className="w-full h-full object-cover" />
-          ) : (
-            initials
-          )}
-        </div>
+        {user?.imageUrl || user?.avatar_url ? (
+          <img 
+            src={user.imageUrl || user.avatar_url} 
+            alt="User Profile" 
+            className="w-8 h-8 rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity border border-border/20" 
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-[11px] font-medium text-foreground cursor-pointer hover:opacity-90 transition-opacity overflow-hidden border border-border/20">
+            {initials}
+          </div>
+        )}
       </div>
     </header>
   );
