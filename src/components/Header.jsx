@@ -74,12 +74,16 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
         <div className="w-px h-5 bg-border mx-1" />
 
         <ThemeSwitch 
-          checked={!isDark} 
+          checked={isDark} 
           onChange={cycleTheme} 
         />
 
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[11px] font-medium text-white cursor-pointer hover:opacity-90 transition-opacity">
-          {initials}
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[11px] font-medium text-white cursor-pointer hover:opacity-90 transition-opacity overflow-hidden">
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt="User Avatar" className="w-full h-full object-cover" />
+          ) : (
+            initials
+          )}
         </div>
       </div>
     </header>
