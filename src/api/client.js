@@ -2,28 +2,36 @@ const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:3001/api';
 
 class ApiClient {
   constructor() {
-    this.token = null;
+    this.getTokenFn = null;
   }
 
-  setToken(token) {
-    this.token = token;
+  setGetTokenFn(fn) {
+    this.getTokenFn = fn;
   }
 
-  getHeaders() {
+  async getHeaders() {
     const headers = {
       'Content-Type': 'application/json',
     };
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (this.getTokenFn) {
+      try {
+        const token = await this.getTokenFn();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      } catch (err) {
+        console.error("[ApiClient] Failed to get token", err);
+      }
     }
     return headers;
   }
 
   async fetchApi(endpoint, options = {}) {
+    const headers = await this.getHeaders();
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers: {
-        ...this.getHeaders(),
+        ...headers,
         ...options.headers,
       },
     });

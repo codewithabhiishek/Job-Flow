@@ -8,22 +8,13 @@ export const AuthProvider = ({ children }) => {
   const { user, isLoaded, isSignedIn } = useUser();
   const { getToken } = useClerkAuth();
   const clerk = useClerk();
-
-  useEffect(() => {
-    const updateToken = async () => {
-      if (isSignedIn) {
-        try {
-          const token = await getToken();
-          apiClient.setToken(token);
-        } catch (error) {
-          console.error("Failed to fetch Clerk token", error);
-        }
-      } else {
-        apiClient.setToken(null);
-      }
-    };
-    updateToken();
-  }, [isSignedIn, getToken]);
+  
+  // Sync setting of getToken to prevent race conditions in child components' effects
+  if (isSignedIn && getToken) {
+    apiClient.setGetTokenFn(getToken);
+  } else {
+    apiClient.setGetTokenFn(null);
+  }
 
   const value = {
     user: user

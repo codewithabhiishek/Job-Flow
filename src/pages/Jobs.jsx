@@ -74,17 +74,29 @@ export default function Jobs() {
   const tableRef = useRef(null);
 
   useEffect(() => {
+    console.log("[Jobs] mounted");
+    let isMounted = true;
+    
     const load = async () => {
+      console.log("[Jobs] fetching jobs");
       try {
         const data = await apiClient.fetchApi('/jobs');
+        if (!isMounted) return;
+        
+        console.log(`[Jobs] API response status: 200, job count: ${data.length}`);
+        console.log("[Jobs] jobs stored in state");
         setJobs(data);
       } catch (err) {
-        console.error(err);
+        console.error("[Jobs] Error fetching jobs:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     load();
+    
+    return () => { isMounted = false; };
   }, []);
 
   const filtered = useMemo(() => {
@@ -108,6 +120,8 @@ export default function Jobs() {
       if (av > bv) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
+    
+    console.log(`[Jobs] raw jobs length: ${jobs.length} | filtered jobs length: ${result.length}`);
     return result;
   }, [jobs, searchQuery, statusFilter, sortKey, sortDir]);
 
