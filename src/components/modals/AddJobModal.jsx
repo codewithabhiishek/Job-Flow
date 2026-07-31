@@ -48,42 +48,62 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
     onOpenChange(isOpen);
   };
 
-  const toBase64 = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        
-        // Scale down if image is too large (max 1920x1080 equivalent)
-        const maxDimension = 1920;
-        if (width > maxDimension || height > maxDimension) {
-          const ratio = Math.min(maxDimension / width, maxDimension / height);
-          width *= ratio;
-          height *= ratio;
-        }
+  const toBase64 = async (file) => {
+    console.log(`[Compression] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          const maxDimension = 1600;
+          if (width > maxDimension || height > maxDimension) {
+            const ratio = Math.min(maxDimension / width, maxDimension / height);
+            width *= ratio;
+            height *= ratio;
+          }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        
-        // Fill white background for transparent PNGs
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
 
-        // Compress to JPEG with 0.8 quality
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-        resolve(compressedBase64);
+          const MAX_BASE64_SIZE = 3.8 * 1024 * 1024; // 3.8 MB (safely below 4.5MB limit)
+          let quality = 0.8;
+          let compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+          
+          while (compressedBase64.length > MAX_BASE64_SIZE && quality > 0.1) {
+            quality -= 0.1;
+            compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          console.log(`[Compression] Final Quality: ${quality.toFixed(1)}`);
+          console.log(`[Compression] Base64 size: ${(compressedBase64.length / 1024 / 1024).toFixed(2)} MB`);
+          
+          const estimatedPayloadSize = compressedBase64.length + 500;
+          console.log(`[Compression] Estimated HTTP payload size: ${(estimatedPayloadSize / 1024 / 1024).toFixed(2)} MB`);
+
+          if (compressedBase64.length > MAX_BASE64_SIZE) {
+            reject(new Error("Image is too large. Please upload a smaller screenshot."));
+            return;
+          }
+
+          resolve(compressedBase64);
+        };
+        img.onerror = () => reject(new Error("Failed to process image."));
+        img.src = e.target.result;
       };
-      img.onerror = (err) => reject(err);
-      img.src = e.target.result;
-    };
-    reader.onerror = error => reject(error);
-  });
+      reader.onerror = error => reject(error);
+    });
+  };
 
   const handleExtract = async () => {
     setLoading(true);
@@ -109,10 +129,15 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
         payload = text;
       }
 
+      console.log(`[AI Invocation] Sending request...`);
       const result = await apiClient.fetchApi('/ai/invoke', {
-        method: "POST",
-        body: JSON.stringify({ method, payload }),
+        method: 'POST',
+        body: JSON.stringify({
+          method,
+          payload
+        })
       });
+      console.log(`[AI Invocation] Success. Extracted data received.`);
 
       console.log("[DEBUG] Fetch API complete. Raw result:", result);
 
