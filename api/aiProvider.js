@@ -12,12 +12,17 @@ export class AIProvider {
     const visionModel = process.env.VISION_MODEL || "meta/llama-3.2-11b-vision-instruct";
     const model = type === "screenshot" ? visionModel : textModel;
     
-    let systemMessage = `You are an expert AI recruiter assistant. Extract job details from the provided text or image into a strict JSON object.
+    let systemMessage = `You are a strict JSON extraction engine.
+Extract job details from the provided text or screenshot.
+
 CRITICAL RULES:
 1. ONLY extract information explicitly present in the job posting. NEVER infer, guess, hallucinate, or invent values.
 2. If a field is missing, return null or an empty string. Prefer missing data over incorrect data.
 3. Preserve original capitalization and wording whenever possible.
-4. Return valid JSON only. Do not wrap the response in Markdown. Do not include explanations or extra text.
+4. Return ONLY a single, valid JSON object.
+5. Do NOT use markdown code blocks (e.g., \`\`\`json).
+6. Do NOT output any explanations or extra text before or after the JSON.
+7. Output must begin with { and end with }.
 
 Extraction rules for fields:
 - company: Extract the exact company name only. Do not shorten or modify it.
@@ -34,20 +39,20 @@ Extraction rules for fields:
 - benefits: Extract only explicitly listed benefits.
 - notes: Leave empty. Do not generate summaries.
 
-Required JSON format:
+Required JSON Schema:
 {
-  "company": "Company Name",
-  "job_title": "Role Name",
-  "location": "Location Name (City, State/Country)",
-  "work_mode": "On-site, Hybrid, or Remote",
-  "salary": "Salary string exactly as it appears or formatted",
-  "employment_type": "Full-time, Part-time, Contract, etc.",
-  "experience": "Junior, Mid-level, Senior, or specific years",
-  "education": "Bachelor's degree, etc.",
-  "skills": ["Skill 1", "Skill 2"],
-  "deadline": "YYYY-MM-DD or string",
-  "job_url": "URL if available",
-  "benefits": ["Benefit 1", "Benefit 2"],
+  "company": "",
+  "job_title": "",
+  "location": "",
+  "work_mode": "",
+  "salary": "",
+  "employment_type": "",
+  "experience": "",
+  "education": "",
+  "skills": [],
+  "deadline": "",
+  "job_url": "",
+  "benefits": [],
   "notes": ""
 }`;
 
@@ -115,19 +120,38 @@ Required JSON format:
         const content = data.choices[0].message.content;
         
         console.log(`[AI Success] Status: 200 | Duration: ${duration}ms`);
-        console.log(`[AI Raw Output] ${content}`);
+        console.log("================ RAW MODEL OUTPUT ================");
+        console.log(content);
+        console.log("==================================================");
 
         try {
-          // Extract the JSON object using substring from first '{' to last '}'
-          const firstBrace = content.indexOf('{');
-          const lastBrace = content.lastIndexOf('}');
+          // Clean the content by removing markdown formatting
+          let cleanContent = content.trim();
+          if (cleanContent.startsWith('```json')) {
+            cleanContent = cleanContent.replace(/^```json/, '');
+          } else if (cleanContent.startsWith('```')) {
+            cleanContent = cleanContent.replace(/^```/, '');
+          }
+          if (cleanContent.endsWith('```')) {
+            cleanContent = cleanContent.replace(/```$/, '');
+          }
+          cleanContent = cleanContent.trim();
+
+          const firstBrace = cleanContent.indexOf('{');
+          const lastBrace = cleanContent.lastIndexOf('}');
           
           if (firstBrace === -1 || lastBrace === -1) {
             throw new Error("No JSON object found in response");
           }
           
-          const jsonString = content.substring(firstBrace, lastBrace + 1);
-          const parsed = JSON.parse(jsonString);
+          const jsonString = cleanContent.substring(firstBrace, lastBrace + 1);
+          
+          // Basic sanitization of common JSON errors from LLMs (trailing commas, etc.)
+          const sanitizedJson = jsonString
+            .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, ""); // Remove control characters
+
+          const parsed = JSON.parse(sanitizedJson);
 
           // Post-processing logic to enforce rules
           const sanitizeStr = (val) => (val && typeof val === 'string' && val.trim().toLowerCase() !== 'none' && val.trim().toLowerCase() !== 'null' ? val.trim() : "");
