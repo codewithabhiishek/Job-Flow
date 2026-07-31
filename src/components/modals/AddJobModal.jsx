@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,30 +19,41 @@ const TABS = [
 ];
 
 export default function AddJobModal({ open, defaultTab = "screenshot", onOpenChange, onExtract }) {
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  
+  // Always initialise to "screenshot" — never rely on a useEffect to set this
+  // after the first render, which causes the dropzone to flash invisible.
+  const [activeTab, setActiveTab] = useState("screenshot");
+
   // State for Screenshot
   const [file, setFile] = useState(null);
-  
+
   // State for URL
   const [url, setUrl] = useState("");
-  
+
   // State for Description
   const [text, setText] = useState("");
-  
+
   const [loading, setLoading] = useState(false);
 
+  // When the modal re-opens, reset to the correct default tab.
+  // We track the PREVIOUS open value so we only fire on the false→true transition,
+  // not on every render while it is already open.
+  const prevOpen = useRef(false);
   useEffect(() => {
-    if (open) {
-      setActiveTab(defaultTab);
-    }
-  }, [open, defaultTab]);
-
-  const handleClose = (isOpen) => {
-    if (!isOpen) {
+    if (open && !prevOpen.current) {
+      setActiveTab(defaultTab ?? "screenshot");
       setFile(null);
       setUrl("");
       setText("");
+      setLoading(false);
+    }
+    prevOpen.current = open;
+  }, [open, defaultTab]);
+
+  const handleClose = (isOpen) => {
+    // State is now reset in the useEffect above on the next open,
+    // so we don't need to duplicate it here — but we keep the guard
+    // for immediate visual cleanup when the dialog closes.
+    if (!isOpen) {
       setLoading(false);
     }
     onOpenChange(isOpen);
@@ -234,13 +245,13 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
 
         {/* Dynamic Content Area (Fixed Height to prevent jumping) */}
         <div className="px-8 py-6 flex-1 min-h-[280px] relative flex flex-col">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 5 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.15 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.12 }}
               className="h-full flex-1 flex flex-col justify-center"
             >
               {activeTab === "screenshot" && (
