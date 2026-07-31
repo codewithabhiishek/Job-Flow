@@ -111,7 +111,7 @@ app.delete('/api/jobs/:id', async (req, res) => {
   }
 });
 
-import * as cheerio from 'cheerio';
+import { urlExtractor } from './urlExtractor.js';
 
 app.post('/api/ai/invoke', async (req, res) => {
   try {
@@ -120,14 +120,16 @@ app.post('/api/ai/invoke', async (req, res) => {
 
     if (method === "url") {
       try {
-        const response = await fetch(payload);
-        if (!response.ok) throw new Error("Failed to fetch job URL");
-        const html = await response.text();
-        const $ = cheerio.load(html);
-        $('script, style, noscript, iframe, img, svg, head').remove();
-        const text = $('body').text().replace(/\s+/g, ' ').trim();
-        result = await aiProvider.invokeLLM(text, "url");
+        const cleanPayload = await urlExtractor.extract(payload);
+        result = await aiProvider.invokeLLM(cleanPayload, "url");
       } catch (fetchErr) {
+        // If the extractor rejects it as non-job, return exactly as requested
+        if (fetchErr.message === "This URL is not an individual job posting.") {
+          return res.json({
+            success: false,
+            error: fetchErr.message
+          });
+        }
         return res.json({
           success: false,
           stage: "URL Fetch",

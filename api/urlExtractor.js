@@ -1,0 +1,187 @@
+import * as cheerio from 'cheerio';
+
+export class UrlExtractor {
+  
+  /**
+   * Determine if a URL belongs to a known ATS or job posting pattern.
+   */
+  isKnownATS(urlStr) {
+    const u = new URL(urlStr);
+    const domain = u.hostname.toLowerCase();
+    const path = u.pathname.toLowerCase();
+    
+    // Greenhouse
+    if (domain.includes('boards.greenhouse.io') && path.includes('/jobs/')) return true;
+    
+    // Lever
+    if (domain.includes('jobs.lever.co') && path.split('/').length >= 3) return true;
+    
+    // Ashby
+    if (domain.includes('jobs.ashbyhq.com') && path.split('/').length >= 3) return true;
+    
+    // Workday (usually myworkdayjobs.com/.../job/...)
+    if (domain.includes('myworkdayjobs.com') && path.includes('/job/')) return true;
+    
+    // LinkedIn
+    if (domain.includes('linkedin.com') && (path.includes('/jobs/view/') || path.includes('/jobs/search'))) {
+      // NOTE: LinkedIn often blocks automated fetching or returns generic auth walls.
+      // But we will allow the URL pattern.
+      return true;
+    }
+    
+    // Generic patterns for custom careers pages
+    // e.g. /careers/job/123, /jobs/software-engineer
+    if (path.match(/\/(jobs|careers|openings)\/[a-zA-Z0-9-]+\/?$/)) return true;
+    if (path.match(/\/(job|posting)\/[a-zA-Z0-9-]+\/?$/)) return true;
+    
+    return false;
+  }
+
+  /**
+   * Extract JSON-LD JobPosting schema if it exists.
+   */
+  extractJsonLd($) {
+    let jobData = null;
+    $('script[type="application/ld+json"]').each((i, el) => {
+      try {
+        const text = $(el).html();
+        const parsed = JSON.parse(text);
+        
+        const checkNode = (node) => {
+          if (node['@type'] === 'JobPosting') {
+            jobData = node;
+          } else if (Array.isArray(node)) {
+            node.forEach(checkNode);
+          } else if (node && typeof node === 'object' && node['@graph']) {
+            checkNode(node['@graph']);
+          }
+        };
+        
+        checkNode(parsed);
+      } catch (e) {
+        // ignore parse errors
+      }
+    });
+    return jobData;
+  }
+
+  /**
+   * Clean HTML by removing non-content nodes to leave a focused description.
+   */
+  cleanHtml($) {
+    // Remove totally useless tags
+    $('script, style, noscript, iframe, svg, img, video, audio, link, meta, head').remove();
+    
+    // Remove UI elements
+    $('nav, header, footer, aside').remove();
+    $('[role="navigation"], [role="banner"], [role="contentinfo"]').remove();
+    
+    // Remove generic noise by class/id substrings
+    const noiseSelectors = [
+      '#cookie-banner', '.cookie-banner', '#consent', '.consent',
+      '.sidebar', '#sidebar', '.recommendations', '.related-jobs',
+      '.similar-jobs', '.newsletter', '.subscribe', '.social-share',
+      '.job-alerts', '.apply-now-top', '.navigation', '.menu'
+    ];
+    $(noiseSelectors.join(', ')).remove();
+    
+    // Attempt to isolate main content area
+    let mainContent = $('main');
+    if (mainContent.length === 0) {
+      mainContent = $('[role="main"]');
+    }
+    if (mainContent.length === 0) {
+      mainContent = $('#app-body, #content, .posting-page, .job-description, #job-details, .application-form');
+    }
+    
+    if (mainContent.length > 0) {
+      return mainContent.text().replace(/\s+/g, ' ').trim();
+    }
+    
+    // Fallback: whole body text
+    return $('body').text().replace(/\s+/g, ' ').trim();
+  }
+
+  async extract(urlStr) {
+    // 1. Basic validation
+    let u;
+    try {
+      u = new URL(urlStr);
+    } catch {
+      throw new Error("Invalid URL provided.");
+    }
+    
+    const isATS = this.isKnownATS(urlStr);
+    
+    // We fetch the page
+    const response = await fetch(urlStr, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch page. Status: ${response.status}`);
+    }
+    
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    
+    // 2. Extract Metadata
+    const title = $('title').text().toLowerCase();
+    const ogTitle = $('meta[property="og:title"]').attr('content') || "";
+    const jsonLd = this.extractJsonLd($);
+    
+    // 3. Strict Verification
+    let isJobPosting = isATS;
+    if (jsonLd) {
+      isJobPosting = true; // JobPosting schema present
+    } else {
+      // Check title for generic patterns indicating a non-job page
+      const genericKeywords = ['careers', 'jobs', 'about us', 'team', 'engineering blog', 'home'];
+      const isGeneric = genericKeywords.some(kw => title === kw || title.startsWith(`${kw} |`));
+      
+      const hasJobKeywords = title.includes('engineer') || title.includes('manager') || 
+                             title.includes('developer') || title.includes('designer') || 
+                             title.includes('analyst');
+      
+      if (isGeneric && !hasJobKeywords && !isATS) {
+        throw new Error("This URL is not an individual job posting.");
+      }
+      
+      // If no JSON-LD and not a known ATS, use a loose heuristic based on title length or keywords
+      // But we will allow it to proceed and let the LLM decide if it's too ambiguous, 
+      // UNLESS it's definitely a homepage (e.g. path is just / or /careers)
+      if (u.pathname === '/' || u.pathname === '/careers' || u.pathname === '/jobs') {
+        throw new Error("This URL is not an individual job posting.");
+      }
+    }
+    
+    // 4. Clean HTML
+    const cleanText = this.cleanHtml($);
+    
+    // 5. Construct final prompt string to send to AI
+    let structuredPayload = "Job URL: " + urlStr + "\\n\\n";
+    
+    if (jsonLd) {
+      structuredPayload += "=== STRUCTURED METADATA ===\\n";
+      if (jsonLd.title) structuredPayload += `Title: ${jsonLd.title}\\n`;
+      if (jsonLd.hiringOrganization?.name) structuredPayload += `Company: ${jsonLd.hiringOrganization.name}\\n`;
+      if (jsonLd.jobLocation) structuredPayload += `Location: ${JSON.stringify(jsonLd.jobLocation)}\\n`;
+      if (jsonLd.employmentType) structuredPayload += `Employment Type: ${jsonLd.employmentType}\\n`;
+      if (jsonLd.baseSalary) structuredPayload += `Salary: ${JSON.stringify(jsonLd.baseSalary)}\\n`;
+      if (jsonLd.validThrough) structuredPayload += `Deadline: ${jsonLd.validThrough}\\n`;
+      structuredPayload += "===========================\\n\\n";
+    }
+    
+    structuredPayload += "=== PAGE CONTENT ===\\n";
+    // Truncate text if it's absurdly long to prevent token overflow
+    structuredPayload += cleanText.substring(0, 15000);
+    
+    return structuredPayload;
+  }
+}
+
+export const urlExtractor = new UrlExtractor();
