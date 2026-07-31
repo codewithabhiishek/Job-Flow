@@ -124,17 +124,14 @@ Required JSON Schema:
         console.log(content);
         console.log("==================================================");
 
+        let jsonString = "";
+        let sanitizedJson = "";
         try {
           // Clean the content by removing markdown formatting
           let cleanContent = content.trim();
-          if (cleanContent.startsWith('```json')) {
-            cleanContent = cleanContent.replace(/^```json/, '');
-          } else if (cleanContent.startsWith('```')) {
-            cleanContent = cleanContent.replace(/^```/, '');
-          }
-          if (cleanContent.endsWith('```')) {
-            cleanContent = cleanContent.replace(/```$/, '');
-          }
+          if (cleanContent.startsWith('```json')) cleanContent = cleanContent.replace(/^```json/i, '');
+          else if (cleanContent.startsWith('```')) cleanContent = cleanContent.replace(/^```/, '');
+          if (cleanContent.endsWith('```')) cleanContent = cleanContent.replace(/```$/, '');
           cleanContent = cleanContent.trim();
 
           const firstBrace = cleanContent.indexOf('{');
@@ -144,12 +141,20 @@ Required JSON Schema:
             throw new Error("No JSON object found in response");
           }
           
-          const jsonString = cleanContent.substring(firstBrace, lastBrace + 1);
+          jsonString = cleanContent.substring(firstBrace, lastBrace + 1);
           
-          // Basic sanitization of common JSON errors from LLMs (trailing commas, etc.)
-          const sanitizedJson = jsonString
+          // Basic sanitization of common JSON errors from LLMs (trailing commas, unescaped newlines)
+          sanitizedJson = jsonString
             .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
-            .replace(/[\u0000-\u001F\u007F-\u009F]/g, ""); // Remove control characters
+            .replace(/\n/g, "\\n") // Escape literal newlines within strings (naive approach, but helps)
+            .replace(/\r/g, "\\r")
+            .replace(/\t/g, "\\t");
+
+          // Restore structural newlines for braces/brackets so parse error logs remain readable
+          sanitizedJson = sanitizedJson
+            .replace(/\\n\s*}/g, "\n}")
+            .replace(/{\\n/g, "{\n")
+            .replace(/,\s*\\n/g, ",\n");
 
           const parsed = JSON.parse(sanitizedJson);
 
@@ -176,7 +181,14 @@ Required JSON Schema:
 
           return processed;
         } catch (parseError) {
-          console.error("[AI Parse Error] Failed to parse JSON from response.", parseError);
+          console.error("================ PARSE ERROR ================");
+          console.error("JSON.parse error:", parseError.message);
+          console.error("--- Cleaned response (jsonString):");
+          console.error(jsonString);
+          console.error("--- Sanitized response (sanitizedJson):");
+          console.error(sanitizedJson);
+          console.error("=============================================");
+          
           if (attempt === maxAttempts) throw new Error("AI returned invalid JSON format.");
         }
 
