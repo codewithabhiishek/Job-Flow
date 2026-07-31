@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import StatusBadge, { STATUS_ORDER, STATUS_CONFIG } from "@/components/StatusBadge";
 import SourceBadge from "@/components/SourceBadge";
+import CompanyAvatar from "@/components/CompanyAvatar";
 import {
   Select, SelectContent, SelectItem, SelectTrigger,
 } from "@/components/ui/select";
@@ -65,27 +66,6 @@ const condenseSalary = (raw) => {
   if (n >= 1_000_000) return `${cur}${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M${period}`;
   if (n >= 1_000)     return `${cur}${Math.round(n / 1_000)}k${period}`;
   return `${cur}${n}${period}`;
-};
-
-// ─── Deterministic company avatar ─────────────────────────────────────────────
-const AVATAR_PALETTES = [
-  "bg-violet-500/15 text-violet-600 dark:text-violet-300",
-  "bg-blue-500/15   text-blue-600   dark:text-blue-300",
-  "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
-  "bg-amber-500/15  text-amber-600  dark:text-amber-300",
-  "bg-rose-500/15   text-rose-600   dark:text-rose-300",
-  "bg-sky-500/15    text-sky-600    dark:text-sky-300",
-  "bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-300",
-  "bg-teal-500/15   text-teal-600   dark:text-teal-300",
-];
-
-const avatar = (name) => {
-  if (!name) return { initials: "?", cls: "bg-muted text-muted-foreground" };
-  const h = name.split("").reduce((a, c) => c.charCodeAt(0) + ((a << 5) - a), 0);
-  return {
-    initials: name.substring(0, 2).toUpperCase(),
-    cls: AVATAR_PALETTES[Math.abs(h) % AVATAR_PALETTES.length],
-  };
 };
 
 // ─── Inline text cell ─────────────────────────────────────────────────────────
@@ -345,7 +325,6 @@ export default function Jobs() {
                 {/* tbody */}
                 <tbody>
                   {filtered.map(job => {
-                    const av  = avatar(job.company);
                     const sal = condenseSalary(job.salary);
                     const sel = selectedRow === job.id;
 
@@ -366,12 +345,8 @@ export default function Jobs() {
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             {/* Avatar */}
-                            <div className={cn(
-                              "shrink-0 w-[24px] h-[24px] rounded-[5px] flex items-center justify-center text-[9px] font-bold",
-                              av.cls,
-                            )}>
-                              {av.initials}
-                            </div>
+                            <CompanyAvatar company={job.company} logo={job.logo} size={24} />
+                            
                             <div className="flex-1 min-w-0">
                               {cellEditing(job.id, "company") ? (
                                 <input autoFocus value={editValue}
@@ -525,14 +500,11 @@ export default function Jobs() {
             {/* ── Mobile cards ───────────────────────────────────────────── */}
             <div className="md:hidden divide-y divide-border/40">
               {filtered.map(job => {
-                const av  = avatar(job.company);
                 const sal = condenseSalary(job.salary);
                 return (
                   <div key={job.id} className="px-4 py-3.5 hover:bg-muted/15 transition-colors cursor-pointer">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={cn("shrink-0 w-8 h-8 rounded-[7px] flex items-center justify-center text-[11px] font-bold", av.cls)}>
-                        {av.initials}
-                      </div>
+                      <CompanyAvatar company={job.company} logo={job.logo} size={32} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">

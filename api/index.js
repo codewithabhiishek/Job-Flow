@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
+import { resolveCompanyLogo } from './utils/logoResolver.js';
+
 dotenv.config({ path: '.env.local' });
 dotenv.config();
 
@@ -111,6 +113,11 @@ app.post('/api/jobs', async (req, res) => {
       user_id: userId
     };
 
+    // Auto-resolve logo if not provided or empty
+    if (!rawPayload.logo && rawPayload.company) {
+      rawPayload.logo = await resolveCompanyLogo(rawPayload.company, rawPayload.job_url);
+    }
+
     // Explicitly strip undefined values to prevent Drizzle parameter mismatch bugs
     const dbPayload = Object.fromEntries(
       Object.entries(rawPayload).filter(([_, v]) => v !== undefined)
@@ -141,8 +148,23 @@ app.put('/api/jobs/:id', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid input', details: validation.error.errors });
     }
 
+    const rawPayload = { ...validation.data };
+
+    // Auto-resolve logo if company or URL changes, and logo is either empty or we want to try again
+    if (
+      (rawPayload.company !== undefined || rawPayload.job_url !== undefined) && 
+      (!rawPayload.logo)
+    ) {
+      const companyToUse = rawPayload.company || existing[0].company;
+      const urlToUse = rawPayload.job_url !== undefined ? rawPayload.job_url : existing[0].job_url;
+      // Only resolve if the existing logo is empty/null, or we explicitly send empty logo
+      if (!existing[0].logo || rawPayload.logo === "") {
+         rawPayload.logo = await resolveCompanyLogo(companyToUse, urlToUse);
+      }
+    }
+
     const dbPayload = Object.fromEntries(
-      Object.entries(validation.data).filter(([_, v]) => v !== undefined)
+      Object.entries(rawPayload).filter(([_, v]) => v !== undefined)
     );
 
     const updatedJob = await db.update(jobs)

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import CompanyAvatar from "@/components/CompanyAvatar";
 
 export default function Kanban() {
   const { searchQuery, openAddJob } = useOutletContext();
@@ -122,15 +123,18 @@ export default function Kanban() {
                               dragSnapshot.isDragging && "shadow-lg border-ring/40 rotate-1",
                             )}
                           >
-                            <div className="mb-1.5">
-                              <p className="text-[13px] font-medium text-foreground truncate">
-                                {job.company}
-                              </p>
-                              {job.job_title && (
-                                <p className="text-[12px] text-muted-foreground truncate">
-                                  {job.job_title}
+                            <div className="mb-1.5 flex gap-2.5">
+                              <CompanyAvatar company={job.company} logo={job.logo} size={28} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-medium text-foreground truncate leading-tight">
+                                  {job.company}
                                 </p>
-                              )}
+                                {job.job_title && (
+                                  <p className="text-[12px] text-muted-foreground truncate leading-snug mt-0.5">
+                                    {job.job_title}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             
                             <div className="flex items-center justify-between text-[11px]">
