@@ -23,12 +23,16 @@ const getPlatformFromUrl = (url) => {
   if (!url) return null;
   const l = url.toLowerCase();
   if (l.includes('linkedin.com')) return 'LinkedIn';
+  if (l.includes('naukri.com')) return 'Naukri';
   if (l.includes('indeed.com')) return 'Indeed';
   if (l.includes('wellfound.com') || l.includes('angel.co')) return 'Wellfound';
-  if (l.includes('naukri.com')) return 'Naukri';
+  if (l.includes('careers.google.com')) return 'Google Careers';
+  if (l.includes('amazon.jobs')) return 'Amazon Jobs';
+  if (l.includes('jobs.lever.co') || l.includes('lever.co')) return 'Lever';
+  if (l.includes('greenhouse.io')) return 'Greenhouse';
+  if (l.includes('workday.com')) return 'Workday';
   if (l.includes('glassdoor.com')) return 'Glassdoor';
   if (l.includes('instahyre.com')) return 'Instahyre';
-  if (l.includes('greenhouse.io') || l.includes('lever.co') || l.includes('workday.com') || l.includes('careers.')) return 'Company Website';
   return 'Company Website';
 };
 
@@ -175,9 +179,11 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
       
       if (method === "url") {
         extractedPayload.job_url = url;
-        if (!extractedPayload.source) {
-          extractedPayload.source = getPlatformFromUrl(url);
-        }
+      }
+
+      // If the AI didn't provide a source, try to detect it from the job_url
+      if (!extractedPayload.source && extractedPayload.job_url) {
+        extractedPayload.source = getPlatformFromUrl(extractedPayload.job_url);
       }
 
       if (!extractedPayload.source) {

@@ -9,6 +9,11 @@ const SOURCE_CONFIG = {
   naukri: { label: "Naukri", icon: Briefcase, className: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20" },
   instahyre: { label: "Instahyre", icon: Briefcase, className: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20" },
   referral: { label: "Referral", icon: Users, className: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-500/20" },
+  "google careers": { label: "Google", icon: Globe, className: "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20" },
+  "amazon jobs": { label: "Amazon", icon: Globe, className: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20" },
+  lever: { label: "Lever", icon: Briefcase, className: "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20" },
+  greenhouse: { label: "Greenhouse", icon: Briefcase, className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" },
+  workday: { label: "Workday", icon: Briefcase, className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20" },
   "company website": { label: "Company Site", icon: Globe, className: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20" },
   manual: { label: "Manual", icon: Briefcase, className: "bg-muted/80 text-muted-foreground border-border/60" },
   unknown: { label: "Unknown", icon: Briefcase, className: "bg-muted/80 text-muted-foreground border-border/60" }
