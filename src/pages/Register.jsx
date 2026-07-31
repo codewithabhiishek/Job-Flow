@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useSignUp } from "@clerk/clerk-react";
+import { Link, Navigate } from "react-router-dom";
+import { useSignUp, useAuth } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ import { safeReturnTo } from "@/lib/authReturnTo";
 
 export default function Register() {
   const { isLoaded, signUp, setActive } = useSignUp();
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -26,6 +27,10 @@ export default function Register() {
   const [otpCode, setOtpCode] = useState("");
 
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  if (authLoaded && isSignedIn) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();

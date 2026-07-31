@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@clerk/clerk-react";
 import {
@@ -134,6 +134,10 @@ export default function Landing() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  if (isLoaded && isSignedIn) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const scrollToHowItWorks = (e) => {
     e.preventDefault();
     document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
@@ -142,15 +146,13 @@ export default function Landing() {
   const handlePrimaryCta = (e) => {
     e.preventDefault();
     if (!isLoaded) return;
-    if (isSignedIn) navigate("/dashboard");
-    else navigate("/register");
+    navigate("/register");
   };
 
   const handleOpenAppCta = (e) => {
     e.preventDefault();
     if (!isLoaded) return;
-    if (isSignedIn) navigate("/dashboard");
-    else navigate("/login");
+    navigate("/login");
   };
 
   return (
