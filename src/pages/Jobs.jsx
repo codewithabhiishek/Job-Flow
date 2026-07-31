@@ -522,9 +522,18 @@ export default function Jobs() {
                 </tbody>
               </table>
 
-              {/* Row count footer */}
-              <div className="px-4 py-2 border-t border-border/40 flex items-center">
-                <span className="text-[11px] text-muted-foreground/40 tabular-nums">
+              {/* Row count & Hints footer */}
+              <div className="px-4 py-3 border-t border-border/40 flex items-center justify-between bg-muted/5 rounded-b-[8px]">
+                <div className="flex items-center gap-3 text-[12px] text-muted-foreground/60 font-medium tracking-tight">
+                  <span className="flex items-center gap-1.5"><Pencil className="w-3 h-3 opacity-70" /> Double-click any cell to edit</span>
+                  <span className="opacity-30">•</span>
+                  <span>Click company to open job posting</span>
+                  <span className="opacity-30">•</span>
+                  <span>Use ⋯ for more actions</span>
+                  <span className="opacity-30">•</span>
+                  <span>Press <kbd className="font-sans px-1.5 py-0.5 bg-muted rounded border border-border/50 text-[10px]">Enter</kbd> to edit</span>
+                </div>
+                <span className="text-[11.5px] text-muted-foreground/40 tabular-nums font-medium">
                   {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
                   {statusFilter !== "all" && " · filtered"}
                 </span>
@@ -777,8 +786,9 @@ const JobTableRow = memo(
         onClick={() => setSelectedRow(job.id)}
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && job.job_url) {
-            window.open(job.job_url, "_blank");
+          if (e.key === "Enter") {
+            e.preventDefault();
+            startEdit(job.id, "company", job.company);
           }
         }}
         className={cn(
