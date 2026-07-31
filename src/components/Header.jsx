@@ -1,11 +1,13 @@
-import { Search, Sun, Plus, Bell } from "lucide-react";
+import { Search, Sun, Moon, Plus, Menu } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/ThemeProvider";
 
-export default function Header({ onAddJob, searchQuery, setSearchQuery }) {
+export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggleMobileSidebar }) {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const initials = (user?.full_name || user?.email || "U")
     .split(" ")
@@ -16,16 +18,29 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery }) {
 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
+  const cycleTheme = () => {
+    if (theme === "dark") setTheme("light");
+    else if (theme === "light") setTheme("system");
+    else setTheme("dark");
+  };
+
+  const ThemeIcon = theme === "dark" ? Moon : Sun;
+
   return (
-    <header className="h-16 shrink-0 border-b border-border/60 bg-background/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-20">
-      <div className="relative flex items-center">
-        <motion.div 
-          animate={{ width: isSearchFocused ? 360 : 280 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="relative"
-        >
+    <header className="h-14 shrink-0 border-b border-border bg-background flex items-center justify-between px-4 gap-4">
+      {/* Mobile hamburger */}
+      <button
+        onClick={onToggleMobileSidebar}
+        className="lg:hidden w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      >
+        <Menu className="w-4 h-4" strokeWidth={1.5} />
+      </button>
+
+      {/* Search */}
+      <div className="flex-1 max-w-md">
+        <div className="relative">
           <Search
-            className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors", isSearchFocused ? "text-primary" : "text-muted-foreground")}
+            className={cn("absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 transition-colors", isSearchFocused ? "text-foreground" : "text-muted-foreground")}
             strokeWidth={1.5}
           />
           <input
@@ -34,21 +49,41 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery }) {
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => setIsSearchFocused(false)}
-            placeholder="Search company, role, location..."
-            className="w-full h-10 pl-10 pr-4 rounded-[10px] bg-muted/30 border border-border/40 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:bg-background transition-all duration-300 shadow-sm"
+            placeholder="Search..."
+            className="w-full h-8 pl-8 pr-3 rounded-md bg-muted/50 border border-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border focus:bg-background transition-all duration-150"
           />
-        </motion.div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3 ml-auto">
-        <button className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors duration-200">
-          <Bell className="w-4 h-4" strokeWidth={1.5} />
+      {/* Right actions */}
+      <div className="flex items-center gap-1.5">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={onAddJob}
+          className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary text-primary-foreground text-button-text font-medium hover:opacity-90 transition-opacity"
+        >
+          <Plus className="w-3.5 h-3.5" strokeWidth={2} />
+          Add Job
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={onAddJob}
+          className="sm:hidden w-8 h-8 flex items-center justify-center rounded-md bg-primary text-primary-foreground"
+        >
+          <Plus className="w-4 h-4" strokeWidth={2} />
+        </motion.button>
+
+        <div className="w-px h-5 bg-border mx-1" />
+
+        <button
+          onClick={cycleTheme}
+          title={`Theme: ${theme}`}
+          className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <ThemeIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors duration-200">
-          <Sun className="w-4 h-4" strokeWidth={1.5} />
-        </button>
-        <div className="w-[1px] h-6 bg-border mx-1"></div>
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[12px] font-semibold text-white shadow-sm ring-2 ring-background cursor-pointer hover:opacity-90 transition-opacity">
+
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[11px] font-medium text-white cursor-pointer hover:opacity-90 transition-opacity">
           {initials}
         </div>
       </div>

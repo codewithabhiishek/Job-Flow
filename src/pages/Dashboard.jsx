@@ -6,9 +6,10 @@ import {
   Send,
   TrendingUp,
   Trophy,
-  Activity,
-  Calendar,
-  Ghost,
+  Camera,
+  Link2,
+  ClipboardPaste,
+  Plus,
   CalendarX2,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -16,7 +17,7 @@ import StatusBadge from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
-  const { searchQuery } = useOutletContext();
+  const { searchQuery, openAddJob } = useOutletContext();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,18 +43,21 @@ export default function Dashboard() {
       )
     : jobs;
 
+  if (loading) {
+    return (
+      <div className="p-6">
+        <SkeletonGrid />
+      </div>
+    );
+  }
+
+  // Onboarding — no jobs yet
+  if (jobs.length === 0) {
+    return <Onboarding openAddJob={openAddJob} />;
+  }
+
   const stats = {
     applications: filtered.length,
-    applied: filtered.filter((j) =>
-      [
-        "applied",
-        "online_assessment",
-        "interview",
-        "offer",
-        "rejected",
-        "ghosted",
-      ].includes(j.status),
-    ).length,
     interviews: filtered.filter((j) =>
       ["interview", "offer"].includes(j.status),
     ).length,
@@ -68,165 +72,94 @@ export default function Dashboard() {
               100,
           )
         : 0,
-    offerRate:
-      filtered.length > 0
-        ? Math.round(
-            (filtered.filter((j) => j.status === "offer").length /
-              filtered.length) *
-              100,
-          )
-        : 0,
   };
 
   const recent = [...filtered]
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
-    .slice(0, 5);
+    .slice(0, 6);
   const upcoming = filtered
     .filter((j) => j.interview_date && new Date(j.interview_date) >= new Date())
     .sort((a, b) => new Date(a.interview_date) - new Date(b.interview_date));
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <SkeletonGrid />
-      </div>
-    );
-  }
-
   const container = {
     hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.05 }
-    }
+    show: { opacity: 1, transition: { staggerChildren: 0.04 } }
   };
-
   const item = {
-    hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    hidden: { opacity: 0, y: 6 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.15 } }
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-8 space-y-8 max-w-[1400px]">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-6 space-y-6 max-w-[1200px]">
       <motion.div variants={item}>
-        <h2 className="type-label mb-1.5 text-muted-foreground">Overview</h2>
-        <h1 className="type-page-title text-foreground">
-          Your job hunt at a glance
-        </h1>
+        <h1 className="type-page-title text-foreground">Overview</h1>
       </motion.div>
 
       {/* Metrics */}
-      <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <MetricCard
-          label="Applications"
-          value={stats.applications}
-          icon={Building2}
-        />
-        <MetricCard label="Applied" value={stats.applied} icon={Send} />
-        <MetricCard
-          label="Interviews"
-          value={stats.interviews}
-          icon={TrendingUp}
-        />
+      <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <MetricCard label="Total" value={stats.applications} icon={Building2} />
+        <MetricCard label="Interviews" value={stats.interviews} icon={TrendingUp} />
         <MetricCard label="Offers" value={stats.offers} icon={Trophy} />
-        <MetricCard
-          label="Response Rate"
-          value={`${stats.responseRate}%`}
-          icon={Activity}
-        />
-        <MetricCard
-          label="Offer Rate"
-          value={`${stats.offerRate}%`}
-          icon={Trophy}
-        />
+        <MetricCard label="Response" value={`${stats.responseRate}%`} icon={Send} />
       </motion.div>
 
       {/* Bottom section */}
-      <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {/* Recent Activity */}
-        <div className="lg:col-span-2 rounded-[16px] border border-border/60 bg-card shadow-premium dark:shadow-premium-dark">
-          <div className="px-6 py-5 border-b border-border/60 flex items-center justify-between">
-            <h3 className="type-card-title text-card-foreground">
-              Recent Activity
-            </h3>
+        <div className="lg:col-span-3 rounded-lg border border-border bg-card">
+          <div className="px-4 py-3 border-b border-border">
+            <h3 className="type-card-title text-card-foreground">Recent Activity</h3>
           </div>
-          <div className="divide-y divide-border/40">
-            {recent.length === 0 ? (
-              <div className="px-6 py-16 flex flex-col items-center justify-center text-center">
-                <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 border border-border/40 text-muted-foreground/50 shadow-sm">
-                  <Ghost className="w-6 h-6 text-muted-foreground" />
-                </div>
-                <h4 className="text-[15px] font-semibold tracking-tight text-foreground mb-1">It's quiet in here</h4>
-                <p className="text-[14px] text-muted-foreground mb-6 leading-relaxed max-w-[250px]">Start tracking your applications to see recent activity appear here.</p>
-              </div>
-            ) : (
-              recent.map((job) => (
-                <div
-                  key={job.id}
-                  className="px-6 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors duration-200"
-                >
-                  <div>
-                    <p className="text-[14px] text-foreground font-medium mb-0.5">
-                      {job.company}
-                      {job.job_title && (
-                        <span className="text-muted-foreground font-normal">
-                          {" "}
-                          · {job.job_title}
-                        </span>
-                      )}
-                    </p>
-                    {job.location && (
-                      <p className="text-[13px] text-muted-foreground">
-                        {job.location}
-                      </p>
+          <div className="divide-y divide-border">
+            {recent.map((job) => (
+              <div
+                key={job.id}
+                className="px-4 py-3 flex items-center justify-between hover:bg-muted/40 transition-colors duration-150"
+              >
+                <div className="min-w-0 flex-1 mr-3">
+                  <p className="text-[13px] text-foreground font-medium truncate">
+                    {job.company}
+                    {job.job_title && (
+                      <span className="text-muted-foreground font-normal">
+                        {" "}· {job.job_title}
+                      </span>
                     )}
-                  </div>
-                  <StatusBadge status={job.status} />
+                  </p>
+                  {job.location && (
+                    <p className="text-[12px] text-muted-foreground truncate">
+                      {job.location}
+                    </p>
+                  )}
                 </div>
-              ))
-            )}
+                <StatusBadge status={job.status} />
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Upcoming Interviews */}
-        <div className="rounded-[16px] border border-border/60 bg-card shadow-premium dark:shadow-premium-dark">
-          <div className="px-6 py-5 border-b border-border/60 flex items-center justify-between">
-            <h3 className="type-card-title text-card-foreground">
-              Upcoming Interviews
-            </h3>
+        <div className="lg:col-span-2 rounded-lg border border-border bg-card">
+          <div className="px-4 py-3 border-b border-border">
+            <h3 className="type-card-title text-card-foreground">Upcoming Interviews</h3>
           </div>
-          <div className="p-6">
+          <div className="p-4">
             {upcoming.length === 0 ? (
-              <div className="text-center py-12 flex flex-col items-center justify-center">
-                <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 border border-border/40 text-muted-foreground/50 shadow-sm">
-                  <CalendarX2
-                    className="w-6 h-6 text-muted-foreground"
-                    strokeWidth={1.5}
-                  />
-                </div>
-                <h4 className="text-[15px] font-semibold tracking-tight text-foreground mb-1">No interviews scheduled</h4>
-                <p className="text-[14px] text-muted-foreground leading-relaxed">
-                  Set an interview date to see it here.
-                </p>
+              <div className="text-center py-8 flex flex-col items-center">
+                <CalendarX2 className="w-5 h-5 text-muted-foreground/40 mb-2" strokeWidth={1.5} />
+                <p className="text-[13px] text-muted-foreground">No interviews scheduled</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {upcoming.map((job) => (
-                  <div
-                    key={job.id}
-                    className="flex items-center justify-between group cursor-default"
-                  >
-                    <div>
-                      <p className="text-[14px] font-medium text-foreground group-hover:text-primary transition-colors">
-                        {job.company}
-                      </p>
-                      <p className="text-[13px] text-muted-foreground mt-0.5">
-                        {job.job_title}
-                      </p>
+                  <div key={job.id} className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1 mr-3">
+                      <p className="text-[13px] font-medium text-foreground truncate">{job.company}</p>
+                      <p className="text-[12px] text-muted-foreground truncate">{job.job_title}</p>
                     </div>
-                    <div className="bg-primary/10 text-primary px-3 py-1.5 rounded-[6px] text-[12px] font-medium tracking-wide">
+                    <span className="text-[12px] font-medium text-foreground bg-muted px-2 py-1 rounded-md shrink-0 tnum">
                       {new Date(job.interview_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </div>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -238,38 +171,82 @@ export default function Dashboard() {
   );
 }
 
+function Onboarding({ openAddJob }) {
+  const actions = [
+    { icon: Camera, label: "Upload Screenshot", desc: "Drop a screenshot of a job posting", tab: "screenshot" },
+    { icon: Link2, label: "Paste Job URL", desc: "Paste a link to any job listing", tab: "url" },
+    { icon: ClipboardPaste, label: "Paste Description", desc: "Copy and paste the job description", tab: "text" },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="flex-1 flex items-center justify-center p-6"
+    >
+      <div className="max-w-lg w-full text-center">
+        <h1 className="text-page-title text-foreground mb-2">Track your job search</h1>
+        <p className="text-[14px] text-muted-foreground mb-8">
+          Add your first application to get started. AI will extract the details for you.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+          {actions.map((a) => {
+            const Icon = a.icon;
+            return (
+              <motion.button
+                key={a.tab}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => openAddJob(a.tab)}
+                className="flex flex-col items-center gap-2 p-5 rounded-lg border border-border bg-card hover:bg-muted/40 transition-colors duration-150 cursor-pointer text-center"
+              >
+                <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                  <Icon className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                </div>
+                <span className="text-[13px] font-medium text-foreground">{a.label}</span>
+                <span className="text-[12px] text-muted-foreground leading-snug">{a.desc}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={() => openAddJob()}
+          className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Or create manually →
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 function MetricCard({ label, value, icon: Icon }) {
   return (
-    <motion.div 
-      whileHover={{ y: -2 }}
-      className="rounded-[12px] border border-border/60 bg-card p-5 shadow-sm hover:shadow-md transition-all duration-300"
-    >
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[13px] font-medium text-muted-foreground">{label}</span>
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Icon className="w-4 h-4 text-primary" strokeWidth={2} />
-        </div>
+    <div className="rounded-lg border border-border bg-card p-4 shadow-card dark:shadow-card-dark">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[12px] font-medium text-muted-foreground">{label}</span>
+        <Icon className="w-3.5 h-3.5 text-muted-foreground/60" strokeWidth={1.5} />
       </div>
-      <p className="text-[28px] font-[700] text-foreground tracking-tight tnum">{value}</p>
-    </motion.div>
+      <p className="text-[22px] font-semibold text-foreground tracking-tight tnum">{value}</p>
+    </div>
   );
 }
 
 function SkeletonGrid() {
   return (
-    <div className="space-y-8 max-w-[1400px]">
-      <div className="space-y-2">
-        <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-10 w-64" />
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-[110px] rounded-[12px]" />
+    <div className="space-y-6 max-w-[1200px]">
+      <Skeleton className="h-7 w-28" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[88px] rounded-lg" />
         ))}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Skeleton className="lg:col-span-2 h-[300px] rounded-[16px]" />
-        <Skeleton className="h-[300px] rounded-[16px]" />
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <Skeleton className="lg:col-span-3 h-[280px] rounded-lg" />
+        <Skeleton className="lg:col-span-2 h-[280px] rounded-lg" />
       </div>
     </div>
   );

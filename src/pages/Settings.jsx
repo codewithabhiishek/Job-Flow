@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { Sun, Moon, Download, Upload, LogOut, Bot, User, Monitor } from "lucide-react";
+import { Sun, Moon, Monitor, Download, Upload, LogOut, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { apiClient } from "@/api/client";
@@ -10,34 +9,18 @@ import { motion } from "framer-motion";
 export default function Settings() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
 
   const handleExport = async (format) => {
     try {
       const jobs = await apiClient.fetchApi('/jobs');
       if (format === "csv") {
-        const headers = [
-          "Company",
-          "Role",
-          "Location",
-          "Salary",
-          "Status",
-          "Applied",
-          "URL",
-        ];
+        const headers = ["Company", "Role", "Location", "Salary", "Status", "Applied", "URL"];
         const rows = jobs.map((j) => [
-          j.company,
-          j.job_title,
-          j.location,
-          j.salary,
-          j.status,
-          j.applied_date,
-          j.job_url,
+          j.company, j.job_title, j.location, j.salary, j.status, j.applied_date, j.job_url,
         ]);
         const csv = [headers, ...rows]
-          .map((r) =>
-            r.map((c) => `"${(c || "").replace(/"/g, '""')}"`).join(","),
-          )
+          .map((r) => r.map((c) => `"${(c || "").replace(/"/g, '""')}"`).join(","))
           .join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const url = URL.createObjectURL(blob);
@@ -47,23 +30,14 @@ export default function Settings() {
         a.click();
         URL.revokeObjectURL(url);
       }
-      toast({
-        title: `Exported ${jobs.length} jobs as ${format.toUpperCase()}`,
-      });
+      toast({ title: `Exported ${jobs.length} jobs as ${format.toUpperCase()}` });
     } catch (err) {
-      toast({
-        title: "Export failed",
-        description: err.message,
-        variant: "destructive",
-      });
+      toast({ title: "Export failed", description: err.message, variant: "destructive" });
     }
   };
 
   const handleImport = () => {
-    toast({
-      title: "Import coming soon",
-      description: "CSV/XLSX import will be available shortly.",
-    });
+    toast({ title: "Import coming soon", description: "CSV/XLSX import will be available shortly." });
   };
 
   const initials = (user?.full_name || user?.email || "U")
@@ -73,134 +47,109 @@ export default function Settings() {
     .slice(0, 2)
     .toUpperCase();
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.04 } }
+  };
+  const item = {
+    hidden: { opacity: 0, y: 6 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.15 } }
+  };
+
+  const themeLabel = theme === "dark" ? "Dark" : theme === "light" ? "Light" : "System";
+  const ThemeIcon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
+
   return (
-    <div className="p-8 max-w-3xl space-y-5">
-      <div>
-        <h2 className="type-label mb-1.5">Preferences</h2>
-        <h1 className="type-page-title text-neutral-100">Settings</h1>
-      </div>
+    <motion.div variants={container} initial="hidden" animate="show" className="p-6 max-w-2xl space-y-4">
+      <motion.div variants={item}>
+        <h1 className="type-page-title text-foreground">Settings</h1>
+      </motion.div>
 
       {/* Profile */}
-      <Card title="Profile">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center text-sm font-medium text-neutral-300">
-            {initials}
+      <motion.div variants={item}>
+        <Card title="Profile">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-[13px] font-medium text-muted-foreground">
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-medium text-foreground truncate">
+                {user?.full_name || user?.email?.split("@")[0] || "User"}
+              </p>
+              <p className="text-[12px] text-muted-foreground truncate">{user?.email}</p>
+            </div>
+            <button
+              onClick={() => logout()}
+              className="flex items-center gap-1.5 px-3 h-8 rounded-md border border-border text-muted-foreground text-[12px] font-medium hover:bg-muted transition-colors duration-150"
+            >
+              <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Sign out
+            </button>
           </div>
-          <div className="flex-1">
-            <p className="type-card-title text-neutral-100">
-              {user?.full_name || user?.email?.split("@")[0] || "User"}
-            </p>
-            <p className="type-body-sm text-neutral-500">{user?.email}</p>
-          </div>
-          <button
-            onClick={() => logout()}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-md border border-white/[0.08] text-neutral-300 text-xs hover:bg-neutral-900 transition-colors duration-200"
-          >
-            <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Sign out
-          </button>
-        </div>
-      </Card>
+        </Card>
+      </motion.div>
 
-      {/* Appearance */}
-      <Card title="Appearance">
-        <div className="flex items-center gap-2 p-1 rounded-lg bg-muted/30 border border-border/40 w-fit">
-          <button
-            onClick={() => setTheme("light")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-200",
-              theme === "light"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Sun className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Light
-          </button>
-          <button
-            onClick={() => setTheme("dark")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-200",
-              theme === "dark"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Moon className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Dark
-          </button>
-          <button
-            onClick={() => setTheme("system")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-200",
-              theme === "system"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Monitor className="w-3.5 h-3.5" strokeWidth={1.5} />
-            System
-          </button>
-        </div>
-      </Card>
+      {/* Appearance — read-only, change via header */}
+      <motion.div variants={item}>
+        <Card title="Appearance">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center">
+              <ThemeIcon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[13px] text-foreground font-medium">{themeLabel} mode</p>
+              <p className="text-[12px] text-muted-foreground">Change theme using the toggle in the top bar</p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
 
       {/* AI Provider */}
-      <Card title="AI Provider">
-        <p className="type-body-sm text-neutral-400 mb-3">
-          Currently using{" "}
-          <span className="text-neutral-200 font-medium">Gemini 3 Flash</span>{" "}
-          via the platform LLM key.
-        </p>
-        <div className="rounded-md bg-neutral-900 border border-white/[0.08] p-3 flex gap-3">
-          <Bot
-            className="w-4 h-4 text-blue-400 shrink-0 mt-0.5"
-            strokeWidth={1.5}
-          />
-          <p className="type-body-sm text-neutral-500">
-            The AI extraction layer is abstracted through the platform's
-            InvokeLLM integration. You can switch models (Gemini, GPT, Claude)
-            per request without UI changes. To use a custom provider key,
-            configure it in your backend environment — the provider interface
-            stays the same.
+      <motion.div variants={item}>
+        <Card title="AI Provider">
+          <p className="text-[13px] text-muted-foreground mb-2">
+            Currently using <span className="text-foreground font-medium">Gemini 3 Flash</span> via the platform LLM key.
           </p>
-        </div>
-      </Card>
+          <div className="rounded-md bg-muted border border-border p-3 flex gap-3">
+            <Bot className="w-4 h-4 text-chart-1 shrink-0 mt-0.5" strokeWidth={1.5} />
+            <p className="text-[12px] text-muted-foreground leading-relaxed">
+              The AI extraction layer is abstracted through the platform's InvokeLLM integration. You can switch models (Gemini, GPT, Claude) per request without UI changes.
+            </p>
+          </div>
+        </Card>
+      </motion.div>
 
       {/* Export & Import */}
-      <Card title="Export & Import">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => handleExport("csv")}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-md bg-neutral-900 border border-white/[0.08] text-neutral-300 text-xs hover:bg-neutral-800 transition-colors duration-200"
-          >
-            <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Export CSV
-          </button>
-          <button
-            onClick={() => handleExport("xlsx")}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-md bg-neutral-900 border border-white/[0.08] text-neutral-300 text-xs hover:bg-neutral-800 transition-colors duration-200"
-          >
-            <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Export XLSX
-          </button>
-          <button
-            onClick={handleImport}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-md bg-neutral-900 border border-white/[0.08] text-neutral-300 text-xs hover:bg-neutral-800 transition-colors duration-200"
-          >
-            <Upload className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Import CSV/XLSX
-          </button>
-        </div>
-      </Card>
-    </div>
+      <motion.div variants={item}>
+        <Card title="Data">
+          <div className="flex flex-wrap gap-2">
+            <ActionButton onClick={() => handleExport("csv")} icon={Download}>Export CSV</ActionButton>
+            <ActionButton onClick={() => handleExport("xlsx")} icon={Download}>Export XLSX</ActionButton>
+            <ActionButton onClick={handleImport} icon={Upload}>Import</ActionButton>
+          </div>
+        </Card>
+      </motion.div>
+    </motion.div>
   );
 }
 
 function Card({ title, children }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-neutral-950 p-6">
-      <h3 className="type-label mb-3">{title}</h3>
+    <div className="rounded-lg border border-border bg-card p-4">
+      <h3 className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider mb-3">{title}</h3>
       {children}
     </div>
+  );
+}
+
+function ActionButton({ onClick, icon: Icon, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 px-3 h-8 rounded-md bg-muted border border-border text-foreground/80 text-[12px] font-medium hover:bg-accent transition-colors duration-150"
+    >
+      <Icon className="w-3.5 h-3.5" strokeWidth={1.5} />
+      {children}
+    </button>
   );
 }

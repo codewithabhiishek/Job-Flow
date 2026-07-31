@@ -3,6 +3,8 @@ import { useOutletContext } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const MONTHS = [
   "January",
@@ -77,70 +79,80 @@ export default function CalendarPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="h-96 bg-neutral-900 rounded-lg animate-pulse" />
+        <Skeleton className="h-[600px] rounded-lg" />
       </div>
     );
   }
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.04 } }
+  };
+  const itemAnim = {
+    hidden: { opacity: 0, y: 6 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.15 } }
+  };
+
   return (
-    <div className="p-8 max-w-[1400px]">
-      <div className="mb-6 flex items-center justify-between">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-6 max-w-[1400px]">
+      <motion.div variants={itemAnim} className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="type-label mb-1.5">Schedule</h2>
-          <h1 className="type-page-title text-neutral-100">
+          <h2 className="type-label mb-1">Schedule</h2>
+          <h1 className="type-page-title text-foreground">
             {MONTHS[month]} {year}
           </h1>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={prevMonth}
-            className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-800 text-neutral-400 hover:bg-neutral-900 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
           >
             <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
           </button>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-3 h-8 rounded-md border border-neutral-800 text-neutral-400 text-xs hover:bg-neutral-900 transition-colors"
+            className="px-3 h-8 rounded-md border border-border text-muted-foreground text-[12px] font-medium hover:bg-muted transition-colors"
           >
             Today
           </button>
           <button
             onClick={nextMonth}
-            className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-800 text-neutral-400 hover:bg-neutral-900 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
           >
             <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-white/[0.06]">
+      <motion.div variants={itemAnim} className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="grid grid-cols-7 border-b border-border bg-muted/30">
           {DAYS.map((day) => (
             <div key={day} className="px-3 py-2.5 text-center type-table-head">
-              {day.toUpperCase()}
+              {day}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-7 bg-card">
           {cells.map((day, i) => {
             const events = eventsForDay(day);
             return (
               <div
                 key={i}
                 className={cn(
-                  "min-h-[100px] border-r border-b border-white/[0.06] p-1.5",
-                  !day && "bg-neutral-950",
+                  "min-h-[110px] border-r border-b border-border p-2",
+                  !day && "bg-muted/20",
                   (i + 1) % 7 === 0 && "border-r-0",
+                  i >= cells.length - 7 && "border-b-0"
                 )}
               >
                 {day && (
                   <>
                     <span
                       className={cn(
-                        "inline-block text-xs mb-1",
+                        "inline-block text-[12px] mb-1.5 font-medium tnum",
                         isToday(day)
-                          ? "w-5 h-5 leading-5 text-center rounded-full bg-blue-600 text-white"
-                          : "text-neutral-500",
+                          ? "w-6 h-6 leading-6 text-center rounded-full bg-chart-1 text-white"
+                          : "text-muted-foreground",
                       )}
                     >
                       {day}
@@ -155,10 +167,10 @@ export default function CalendarPage() {
                           <div
                             key={job.id}
                             className={cn(
-                              "text-[10px] px-1.5 py-0.5 rounded truncate",
+                              "text-[11px] px-1.5 py-0.5 rounded truncate font-medium",
                               isInterview
-                                ? "bg-emerald-950 text-emerald-400"
-                                : "bg-orange-950 text-orange-400",
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                : "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
                             )}
                             title={`${isInterview ? "Interview" : "Deadline"}: ${job.company}`}
                           >
@@ -173,22 +185,22 @@ export default function CalendarPage() {
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       {jobs.filter((j) => j.interview_date || j.deadline).length === 0 && (
-        <div className="mt-6 text-center py-8">
+        <motion.div variants={itemAnim} className="mt-8 text-center py-8">
           <CalendarDays
-            className="w-8 h-8 text-neutral-700 mx-auto mb-2"
+            className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3"
             strokeWidth={1.5}
           />
-          <p className="text-sm text-neutral-500">
+          <p className="text-[13px] text-muted-foreground">
             No interviews or deadlines scheduled
           </p>
-          <p className="text-xs text-neutral-700 mt-1">
-            Set interview dates or deadlines on your jobs to see them here.
+          <p className="text-[12px] text-muted-foreground/70 mt-1">
+            Set dates on your jobs to see them here.
           </p>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

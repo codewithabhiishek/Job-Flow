@@ -7,9 +7,10 @@ import {
   Calendar,
   BarChart3,
   Settings,
-  Plus,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -21,16 +22,23 @@ const NAV_ITEMS = [
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
 
-export default function Sidebar({ onAddJob }) {
+export default function Sidebar({ isCollapsed, onToggleCollapse }) {
   const location = useLocation();
 
   return (
-    <aside className="w-[240px] shrink-0 border-r border-border/60 bg-sidebar flex flex-col">
-      <div className="h-16 flex items-center px-6 border-b border-border/60">
-        <Logo size="md" />
+    <aside
+      className={cn(
+        "shrink-0 border-r border-border bg-sidebar flex flex-col transition-[width] duration-200 ease-in-out",
+        isCollapsed ? "w-[56px]" : "w-[220px]"
+      )}
+    >
+      {/* Logo */}
+      <div className={cn("h-14 flex items-center border-b border-border", isCollapsed ? "justify-center px-0" : "px-4")}>
+        {isCollapsed ? <Logo size="sm" iconOnly /> : <Logo size="sm" />}
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-1.5">
+      {/* Navigation */}
+      <nav className={cn("flex-1 py-3 space-y-0.5", isCollapsed ? "px-2" : "px-2")}>
         {NAV_ITEMS.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -38,36 +46,39 @@ export default function Sidebar({ onAddJob }) {
             <Link
               key={item.path}
               to={item.path}
+              title={isCollapsed ? item.label : undefined}
               className={cn(
-                "group relative flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-[14px] font-medium transition-all duration-200",
+                "relative flex items-center gap-2.5 rounded-md text-sidebar-item transition-colors duration-150",
+                isCollapsed ? "justify-center px-0 py-2" : "px-2.5 py-[7px]",
                 isActive
-                  ? "bg-primary/10 text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
               )}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
+              <Icon className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+              {!isCollapsed && (
+                <span className="truncate">{item.label}</span>
               )}
-              <Icon className={cn("w-4 h-4 transition-transform duration-200 group-hover:scale-110", isActive ? "text-primary" : "opacity-70")} strokeWidth={isActive ? 2 : 1.5} />
-              {item.label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 mt-auto">
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={onAddJob}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[10px] bg-primary text-primary-foreground shadow-premium hover:shadow-premium-hover hover:-translate-y-[1px] transition-all duration-200 text-[14px] font-[600]"
+      {/* Collapse toggle */}
+      <div className={cn("py-3 border-t border-border", isCollapsed ? "px-2" : "px-2")}>
+        <button
+          onClick={onToggleCollapse}
+          className="w-full flex items-center justify-center gap-2 rounded-md px-2.5 py-[7px] text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors duration-150 text-sidebar-item"
         >
-          <Plus className="w-4 h-4" strokeWidth={2} />
-          Add Job
-        </motion.button>
+          {isCollapsed ? (
+            <ChevronsRight className="w-4 h-4" strokeWidth={1.5} />
+          ) : (
+            <>
+              <ChevronsLeft className="w-4 h-4" strokeWidth={1.5} />
+              <span className="truncate">Collapse</span>
+            </>
+          )}
+        </button>
       </div>
     </aside>
   );
