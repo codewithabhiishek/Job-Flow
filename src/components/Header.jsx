@@ -27,7 +27,7 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
   const ThemeIcon = theme === "dark" ? Moon : Sun;
 
   return (
-    <header className="h-14 shrink-0 border-b border-border bg-background flex items-center justify-between px-4 gap-4">
+    <header className="h-14 shrink-0 border-b border-border bg-background flex items-center justify-between px-6 lg:px-8 gap-4">
       {/* Mobile hamburger */}
       <button
         onClick={onToggleMobileSidebar}

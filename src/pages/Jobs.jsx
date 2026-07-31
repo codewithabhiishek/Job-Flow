@@ -248,9 +248,9 @@ export default function Jobs() {
   jobs.forEach((j) => { statusCounts[j.status] = (statusCounts[j.status] || 0) + 1; });
 
   return (
-    <div className="flex flex-col h-full overflow-hidden px-6 lg:px-8 py-6 w-full max-w-full mx-auto" onClick={() => setSelectedRowId(null)}>
-      <div className="flex items-center justify-between mb-4 shrink-0">
-        <h1 className="type-page-title text-foreground">Jobs</h1>
+    <div className="flex flex-col min-h-full px-6 lg:px-8 py-8 w-full max-w-full mx-auto" onClick={() => setSelectedRowId(null)}>
+      <div className="flex items-center justify-between mb-6 shrink-0">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Jobs</h1>
       </div>
 
       {/* Filters */}
@@ -266,7 +266,7 @@ export default function Jobs() {
       </div>
 
       {/* Table / Cards Container */}
-      <div className="flex-1 overflow-auto rounded-lg border border-border bg-card shadow-sm" onClick={e => e.stopPropagation()}>
+      <div className="overflow-x-auto rounded-[8px] border border-border bg-card shadow-sm" onClick={e => e.stopPropagation()}>
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <p className="text-[14px] text-muted-foreground mb-4">No jobs match your criteria.</p>
@@ -283,14 +283,14 @@ export default function Jobs() {
             {/* Desktop View (Table) */}
             <div className="hidden md:block min-w-[900px]">
               <table className="w-full text-left table-fixed" ref={tableRef}>
-                <thead className="sticky top-0 z-10 bg-muted/40 backdrop-blur-sm border-b border-border">
+                <thead>
                   <tr>
                     {COLUMNS.map((col) => (
                       <th
                         key={col.key}
                         onClick={() => col.sortable && handleSort(col.key)}
                         className={cn(
-                          "px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground truncate group",
+                          "px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground truncate group bg-muted/30 border-b border-border/70",
                           col.width,
                           col.align === "right" ? "text-right" : "text-left",
                           col.sortable && "cursor-pointer select-none hover:text-foreground transition-colors",
@@ -302,7 +302,7 @@ export default function Jobs() {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody>
                   {filtered.map((job) => {
                     const avatar = getCompanyAvatar(job.company);
                     const isSelected = selectedRowId === job.id;
@@ -311,8 +311,8 @@ export default function Jobs() {
                         key={job.id}
                         onClick={() => setSelectedRowId(job.id)}
                         className={cn(
-                          "group h-[56px] transition-colors duration-75 select-none",
-                          isSelected ? "bg-muted/80" : "hover:bg-muted/30"
+                          "group h-[52px] transition-colors duration-100 select-none border-b border-border/50 last:border-0",
+                          isSelected ? "bg-muted/80" : "hover:bg-muted/40"
                         )}
                       >
                         {COLUMNS.map(col => {
@@ -429,16 +429,16 @@ export default function Jobs() {
                 return (
                   <div
                     key={job.id}
-                    className="p-4 bg-card space-y-3"
+                    className="p-5 bg-card space-y-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0", avatar.color)}>
+                        <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0", avatar.color)}>
                           {avatar.initials}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="text-[14px] font-semibold text-foreground truncate">{job.company}</h3>
-                          <p className="text-[13px] font-medium text-foreground/80 truncate">{job.job_title}</p>
+                          <h3 className="text-[14.5px] font-semibold text-foreground truncate">{job.company}</h3>
+                          <p className="text-[13.5px] font-medium text-foreground/80 truncate">{job.job_title}</p>
                         </div>
                       </div>
                       <div onClick={(e) => e.stopPropagation()}>
@@ -460,7 +460,7 @@ export default function Jobs() {
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-[12px] text-muted-foreground font-medium">
+                    <div className="flex flex-wrap gap-x-4 gap-y-2.5 text-[12.5px] text-muted-foreground font-medium pt-1">
                       {job.location && (
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3 h-3" /> {job.location}
@@ -489,7 +489,7 @@ function FilterChip({ children, active, onClick, count }) {
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[12px] font-medium transition-colors duration-150 border",
+        "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[13px] font-medium transition-colors duration-150 border",
         active
           ? "bg-foreground text-background border-foreground shadow-sm"
           : "bg-transparent text-muted-foreground border-border hover:bg-muted hover:text-foreground",
