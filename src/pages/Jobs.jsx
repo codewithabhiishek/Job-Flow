@@ -14,14 +14,16 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import DeleteJobButton from "@/components/DeleteJobButton";
 
 const COLUMNS = [
-  { key: "company", label: "Company", width: "w-[22%]", sortable: true, editable: true },
-  { key: "job_title", label: "Role", width: "w-[22%]", sortable: true, editable: true },
+  { key: "company", label: "Company", width: "w-[20%]", sortable: true, editable: true },
+  { key: "job_title", label: "Role", width: "w-[20%]", sortable: true, editable: true },
   { key: "status", label: "Status", width: "w-[15%]", sortable: true, editable: false },
-  { key: "location", label: "Location", width: "w-[15%]", sortable: true, editable: true },
-  { key: "salary", label: "Salary", width: "w-[13%]", sortable: true, align: "right", editable: true },
-  { key: "updated", label: "Last Updated", width: "w-[13%]", sortable: true, align: "right", editable: false },
+  { key: "location", label: "Location", width: "w-[14%]", sortable: true, editable: true },
+  { key: "salary", label: "Salary", width: "w-[12%]", sortable: true, align: "right", editable: true },
+  { key: "updated", label: "Last Updated", width: "w-[11%]", sortable: true, align: "right", editable: false },
+  { key: "actions", label: "", width: "w-[8%]", sortable: false, align: "right", editable: false },
 ];
 
 const EDITABLE_COLS = COLUMNS.filter(c => c.editable).map(c => c.key);
@@ -146,6 +148,10 @@ export default function Jobs() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const removeJob = (jobId) => {
+    setJobs((prev) => prev.filter((j) => j.id !== jobId));
   };
 
   // --- Keyboard & Inline Edit Handlers ---
@@ -392,6 +398,14 @@ export default function Jobs() {
                               </td>
                             );
                           }
+
+                          if (col.key === 'actions') {
+                            return (
+                              <td key={col.key} className="px-4 py-0 text-right">
+                                <DeleteJobButton jobId={job.id} jobTitle={job.company} onDeleteSuccess={removeJob} />
+                              </td>
+                            );
+                          }
                           
                           // Default rendering for Role, Location, Salary
                           return (
@@ -483,9 +497,10 @@ export default function Jobs() {
                       {job.salary && (
                         <span className="text-foreground/80 tnum">{job.salary}</span>
                       )}
-                      <span className="tnum ml-auto">
-                        Updated {formatDate(job.created_date)}
-                      </span>
+                      <div className="ml-auto flex items-center gap-4">
+                        <span className="tnum">Updated {formatDate(job.created_date)}</span>
+                        <DeleteJobButton jobId={job.id} jobTitle={job.company} onDeleteSuccess={removeJob} />
+                      </div>
                     </div>
                   </div>
                 );
