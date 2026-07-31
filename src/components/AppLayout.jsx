@@ -34,8 +34,9 @@ export default function AppLayout() {
   }, []);
 
   const openAddJob = (tab = 'screenshot') => {
-    console.log(`[DEBUG] AppLayout: openAddJob called with tab='${tab}'`);
-    setAddJobDefaultTab(tab);
+    const defaultTab = typeof tab === 'string' ? tab : 'screenshot';
+    console.log(`[DEBUG] AppLayout: openAddJob called with tab='${defaultTab}'`);
+    setAddJobDefaultTab(defaultTab);
     setActiveModal('add-job');
   };
 

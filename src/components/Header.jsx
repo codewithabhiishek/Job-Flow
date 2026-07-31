@@ -57,7 +57,7 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
       <div className="flex items-center gap-1.5">
         <motion.button
           whileTap={{ scale: 0.97 }}
-          onClick={onAddJob}
+          onClick={() => onAddJob("screenshot")}
           className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary text-primary-foreground text-button-text font-medium hover:opacity-90 transition-opacity"
         >
           <Plus className="w-3.5 h-3.5" strokeWidth={2} />
@@ -65,7 +65,7 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
         </motion.button>
         <motion.button
           whileTap={{ scale: 0.97 }}
-          onClick={onAddJob}
+          onClick={() => onAddJob("screenshot")}
           className="sm:hidden w-8 h-8 flex items-center justify-center rounded-md bg-primary text-primary-foreground"
         >
           <Plus className="w-4 h-4" strokeWidth={2} />
