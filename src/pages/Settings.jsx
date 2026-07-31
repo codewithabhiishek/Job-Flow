@@ -1,18 +1,16 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { Sun, Moon, Download, Upload, LogOut, Bot, User } from "lucide-react";
+import { Sun, Moon, Download, Upload, LogOut, Bot, User, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { apiClient } from "@/api/client";
+import { useTheme } from "@/components/ThemeProvider";
+import { motion } from "framer-motion";
 
 export default function Settings() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const [theme, setTheme] = useState("dark");
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
+  const { theme, setTheme } = useTheme();
 
   const handleExport = async (format) => {
     try {
@@ -106,14 +104,14 @@ export default function Settings() {
 
       {/* Appearance */}
       <Card title="Appearance">
-        <div className="flex items-center gap-2 p-1 rounded-lg bg-neutral-900 border border-white/[0.08] w-fit">
+        <div className="flex items-center gap-2 p-1 rounded-lg bg-muted/30 border border-border/40 w-fit">
           <button
             onClick={() => setTheme("light")}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-200",
               theme === "light"
-                ? "bg-white text-neutral-950"
-                : "text-neutral-400 hover:text-neutral-200",
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <Sun className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -124,12 +122,24 @@ export default function Settings() {
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-200",
               theme === "dark"
-                ? "bg-white text-neutral-950"
-                : "text-neutral-400 hover:text-neutral-200",
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <Moon className="w-3.5 h-3.5" strokeWidth={1.5} />
             Dark
+          </button>
+          <button
+            onClick={() => setTheme("system")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-200",
+              theme === "system"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Monitor className="w-3.5 h-3.5" strokeWidth={1.5} />
+            System
           </button>
         </div>
       </Card>

@@ -9,37 +9,38 @@ import {
   BarChart3,
   Shield,
 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const PREVIEW_ROWS = [
   {
-    company: "Stripe",
+    company: "Razorpay",
     role: "Senior Product Engineer",
-    location: "Remote - US",
-    salary: "$200k-$260k",
+    location: "Bengaluru",
+    salary: "₹45 LPA",
     status: "interview",
     applied: "3d ago",
   },
   {
-    company: "Linear",
+    company: "Swiggy",
     role: "Design Engineer",
-    location: "SF",
-    salary: "$180k-$220k",
+    location: "Remote (India)",
+    salary: "₹30 LPA",
     status: "applied",
     applied: "1w ago",
   },
   {
-    company: "Vercel",
+    company: "Meesho",
     role: "Full Stack Engineer",
-    location: "Remote",
-    salary: "$170k-$210k",
+    location: "Bengaluru",
+    salary: "₹35 LPA",
     status: "online_assessment",
     applied: "4d ago",
   },
   {
-    company: "Notion",
+    company: "Groww",
     role: "Growth Engineer",
-    location: "NYC - Hybrid",
-    salary: "$160k-$200k",
+    location: "Bengaluru",
+    salary: "₹25 LPA",
     status: "saved",
     applied: "—",
   },
@@ -97,12 +98,7 @@ export default function Landing() {
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
       {/* Nav */}
       <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center">
-            <span className="text-neutral-950 font-bold text-xs">JF</span>
-          </div>
-          <span className="font-semibold tracking-tight">JobFlow</span>
-        </div>
+        <Logo size="lg" className="text-white" />
         <Link
           to="/dashboard"
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-neutral-950 text-sm font-semibold tracking-[-0.005em] hover:bg-neutral-200 transition-colors duration-200"

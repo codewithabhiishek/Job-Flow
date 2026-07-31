@@ -1,4 +1,6 @@
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "sonner";
+import { ThemeProvider, useTheme } from "@/components/ThemeProvider";
+import LoadingScreen from "@/components/LoadingScreen";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClientInstance } from "@/lib/query-client";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom";
@@ -24,13 +26,7 @@ const ProtectedRoute = ({ children }) => {
   const { isSignedIn, isLoaded } = useAuth();
   const location = useLocation();
 
-  if (!isLoaded) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-neutral-950">
-        <div className="w-8 h-8 border-4 border-neutral-800 border-t-neutral-400 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  if (!isLoaded) return null;
 
   if (!isSignedIn) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -48,16 +44,8 @@ const AuthenticatedApp = () => {
     }
   }, [user]);
 
-  if (!isLoaded) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-neutral-950">
-        <div className="w-8 h-8 border-4 border-neutral-800 border-t-neutral-400 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
   return (
-    <>
+    <LoadingScreen isLoaded={isLoaded}>
       {isDemoMode && (
         <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-center text-xs text-amber-300 font-medium z-50 relative">
           ⚡ <strong>Demo / Development Mode:</strong> Auth is simulated so you can test features right away. Add <code>VITE_CLERK_PUBLISHABLE_KEY</code> in <code>.env</code> when ready for production auth.
@@ -79,21 +67,36 @@ const AuthenticatedApp = () => {
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>
-    </>
+    </LoadingScreen>
+  );
+};
+
+const AppToaster = () => {
+  const { theme } = useTheme();
+  return (
+    <Toaster 
+      position="bottom-right" 
+      theme={theme === 'system' ? 'system' : theme}
+      toastOptions={{
+        className: "bg-background border border-border/60 text-foreground shadow-premium dark:shadow-premium-dark rounded-[10px]"
+      }}
+    />
   );
 };
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <ScrollToTop />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+    <ThemeProvider defaultTheme="system" storageKey="jobflow-theme">
+      <AuthProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <ScrollToTop />
+            <AuthenticatedApp />
+          </Router>
+          <AppToaster />
+        </QueryClientProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

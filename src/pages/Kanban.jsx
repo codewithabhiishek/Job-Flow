@@ -4,6 +4,8 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { apiClient } from "@/api/client";
 import { STATUS_ORDER, STATUS_CONFIG } from "@/components/StatusBadge";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
 
 export default function Kanban() {
   const { searchQuery, openAddJob } = useOutletContext();
@@ -60,36 +62,65 @@ export default function Kanban() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="h-96 bg-neutral-900 rounded-lg animate-pulse" />
+      <div className="p-8 h-full flex flex-col max-w-full overflow-hidden space-y-8">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-10 w-64" />
+        </div>
+        <div className="flex gap-4 overflow-hidden">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="w-[300px] shrink-0 space-y-3">
+              <Skeleton className="h-8 w-1/3" />
+              <div className="rounded-[16px] bg-muted/20 border border-border/40 p-3 h-[400px] space-y-3">
+                {Array.from({ length: 3 }).map((_, j) => (
+                  <Skeleton key={j} className="h-28 w-full rounded-[10px]" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const itemAnim = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="p-8 h-full flex flex-col">
-      <div className="mb-6">
-        <h2 className="type-label mb-1.5">Pipeline</h2>
+    <motion.div variants={container} initial="hidden" animate="show" className="p-8 h-full flex flex-col">
+      <motion.div variants={itemAnim} className="mb-8">
+        <h2 className="type-label mb-1.5 text-muted-foreground">Pipeline</h2>
         <div className="flex items-center justify-between">
-          <h1 className="type-page-title text-neutral-100">Kanban board</h1>
-          <button
+          <h1 className="type-page-title text-foreground">Kanban board</h1>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={openAddJob}
-            className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors duration-200"
+            className="text-[14px] font-semibold text-primary hover:text-primary/80 transition-colors duration-200"
           >
             + Add Job
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-3 overflow-x-auto flex-1 pb-4">
+        <motion.div variants={itemAnim} className="flex gap-4 overflow-x-auto flex-1 pb-4">
           {columns.map((col) => (
-            <div key={col.status} className="w-64 shrink-0 flex flex-col">
-              <div className="px-3 py-2 mb-2 flex items-center justify-between">
-                <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-neutral-400">
+            <div key={col.status} className="w-[300px] shrink-0 flex flex-col">
+              <div className="px-1 mb-3 flex items-center justify-between">
+                <span className="text-[12px] font-[600] uppercase tracking-wider text-muted-foreground">
                   {col.label}
                 </span>
-                <span className="text-xs text-neutral-500">
+                <span className="text-[12px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
                   {col.jobs.length}
                 </span>
               </div>
@@ -99,9 +130,9 @@ export default function Kanban() {
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={cn(
-                      "flex-1 min-h-[100px] rounded-lg border border-white/[0.06] bg-neutral-950 p-2 space-y-2 transition-colors duration-200",
+                      "flex-1 min-h-[150px] rounded-[16px] bg-muted/30 border border-border/40 p-3 space-y-3 transition-colors duration-200 shadow-inner",
                       snapshot.isDraggingOver &&
-                        "bg-neutral-900 border-white/[0.08]",
+                        "bg-muted/50 border-primary/30",
                     )}
                   >
                     {col.jobs.map((job, index) => (
@@ -116,45 +147,49 @@ export default function Kanban() {
                             {...dragProvided.draggableProps}
                             {...dragProvided.dragHandleProps}
                             className={cn(
-                              "rounded-md border border-white/[0.08] bg-neutral-900 p-3 cursor-grab active:cursor-grabbing",
+                              "rounded-[12px] border border-border/60 bg-card p-4 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-premium hover:-translate-y-[2px] transition-all duration-200",
                               dragSnapshot.isDragging &&
-                                "shadow-md shadow-black/30 border-white/[0.1]",
+                                "shadow-lg border-primary/40 rotate-2",
                             )}
                           >
-                            <div className="flex items-start justify-between mb-1.5">
-                              <span className="text-sm font-medium text-neutral-200 truncate">
+                            <div className="flex flex-col gap-1 mb-2">
+                              <span className="text-[14px] font-medium text-foreground truncate">
                                 {job.company}
                               </span>
+                              {job.job_title && (
+                                <p className="text-[13px] text-muted-foreground truncate">
+                                  {job.job_title}
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center justify-between text-[12px]">
+                              <div className="flex flex-col gap-1 text-muted-foreground">
+                                {job.location && (
+                                  <span className="truncate">{job.location}</span>
+                                )}
+                                {job.salary && (
+                                  <span className="font-medium text-foreground/80">
+                                    {job.salary}
+                                  </span>
+                                )}
+                              </div>
                               <span
                                 className={cn(
-                                  "px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ml-2",
+                                  "px-2 py-0.5 rounded-full border shrink-0 text-[10px] font-medium tracking-wide",
                                   STATUS_CONFIG[col.status].className,
                                 )}
                               >
-                                {col.jobs.length > 0 && ""}
+                                {col.label}
                               </span>
                             </div>
-                            {job.job_title && (
-                              <p className="text-xs text-neutral-400 mb-1.5 truncate">
-                                {job.job_title}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-2 text-[11px] text-neutral-500">
-                              {job.location && (
-                                <span className="truncate">{job.location}</span>
-                              )}
-                              {job.salary && (
-                                <span className="text-neutral-500">
-                                  {job.salary}
-                                </span>
-                              )}
-                            </div>
+
                             {job.interview_date && (
-                              <div className="mt-2 text-[11px] text-emerald-400 flex items-center gap-1">
-                                📅{" "}
+                              <div className="mt-3 pt-3 border-t border-border/40 text-[12px] font-medium text-primary flex items-center gap-1.5">
+                                <span className="text-[10px]">📅</span>{" "}
                                 {new Date(
                                   job.interview_date,
-                                ).toLocaleDateString()}
+                                ).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </div>
                             )}
                           </div>
@@ -162,9 +197,12 @@ export default function Kanban() {
                       </Draggable>
                     ))}
                     {provided.placeholder}
-                    {col.jobs.length === 0 && (
-                      <div className="text-center py-6 text-xs text-neutral-700">
-                        Drop here
+                    {col.jobs.length === 0 && !snapshot.isDraggingOver && (
+                      <div className="h-full flex flex-col items-center justify-center text-center py-8">
+                        <div className="w-10 h-10 rounded-full border-2 border-dashed border-border/60 flex items-center justify-center mb-2">
+                          <span className="text-muted-foreground text-[16px]">+</span>
+                        </div>
+                        <span className="text-[13px] font-medium text-muted-foreground">Drop here</span>
                       </div>
                     )}
                   </div>
@@ -172,8 +210,8 @@ export default function Kanban() {
               </Droppable>
             </div>
           ))}
-        </div>
+        </motion.div>
       </DragDropContext>
-    </div>
+    </motion.div>
   );
 }

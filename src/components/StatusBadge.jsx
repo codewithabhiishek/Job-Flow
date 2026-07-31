@@ -2,20 +2,20 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const STATUS_CONFIG = {
-  saved: { label: "Saved", className: "bg-neutral-800 text-neutral-300" },
-  applying: { label: "Applying", className: "bg-indigo-950 text-indigo-400" },
-  applied: { label: "Applied", className: "bg-indigo-950 text-indigo-400" },
+  saved: { label: "Saved", className: "border-neutral-700/60 bg-neutral-800/40 text-neutral-300" },
+  applying: { label: "Applying", className: "border-blue-700/50 bg-blue-900/30 text-blue-300" },
+  applied: { label: "Applied", className: "border-blue-700/50 bg-blue-900/30 text-blue-300" },
   online_assessment: {
     label: "Online Assessment",
-    className: "bg-orange-950 text-orange-400",
+    className: "border-orange-700/50 bg-orange-900/30 text-orange-300",
   },
   interview: {
     label: "Interview",
-    className: "bg-emerald-950 text-emerald-400",
+    className: "border-purple-700/50 bg-purple-900/30 text-purple-300",
   },
-  offer: { label: "Offer", className: "bg-emerald-950 text-emerald-400" },
-  rejected: { label: "Rejected", className: "bg-red-950 text-red-400" },
-  ghosted: { label: "Ghosted", className: "bg-stone-900 text-stone-400" },
+  offer: { label: "Offer", className: "border-emerald-700/50 bg-emerald-900/30 text-emerald-400" },
+  rejected: { label: "Rejected", className: "border-red-700/50 bg-red-900/30 text-red-400" },
+  ghosted: { label: "Ghosted", className: "border-stone-700/50 bg-stone-900/30 text-stone-400" },
 };
 
 export const STATUS_ORDER = [
@@ -35,13 +35,13 @@ export default function StatusBadge({ status, onClick, showChevron = false }) {
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-[0.01em] transition-colors duration-200",
+        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[12px] font-medium tracking-wide transition-all duration-200",
         config.className,
-        onClick && "hover:opacity-80 cursor-pointer",
+        onClick ? "hover:brightness-125 cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-px" : "cursor-default",
       )}
     >
       {config.label}
-      {showChevron && <ChevronDown className="w-3 h-3" strokeWidth={1.5} />}
+      {showChevron && <ChevronDown className="w-3.5 h-3.5 opacity-70" strokeWidth={2} />}
     </button>
   );
 }

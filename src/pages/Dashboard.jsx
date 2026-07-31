@@ -8,8 +8,12 @@ import {
   Trophy,
   Activity,
   Calendar,
+  Ghost,
+  CalendarX2,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import StatusBadge from "@/components/StatusBadge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
   const { searchQuery } = useOutletContext();
@@ -83,23 +87,36 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-8">
         <SkeletonGrid />
       </div>
     );
   }
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="p-8 space-y-8 max-w-[1400px]">
-      <div>
-        <h2 className="type-label mb-1.5">Overview</h2>
-        <h1 className="type-page-title text-neutral-100">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-8 space-y-8 max-w-[1400px]">
+      <motion.div variants={item}>
+        <h2 className="type-label mb-1.5 text-muted-foreground">Overview</h2>
+        <h1 className="type-page-title text-foreground">
           Your job hunt at a glance
         </h1>
-      </div>
+      </motion.div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <MetricCard
           label="Applications"
           value={stats.applications}
@@ -122,40 +139,44 @@ export default function Dashboard() {
           value={`${stats.offerRate}%`}
           icon={Trophy}
         />
-      </div>
+      </motion.div>
 
       {/* Bottom section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
-        <div className="lg:col-span-2 rounded-xl border border-white/[0.06] bg-neutral-950">
-          <div className="px-6 py-4 border-b border-white/[0.06]">
-            <h3 className="type-card-title text-neutral-200">
+        <div className="lg:col-span-2 rounded-[16px] border border-border/60 bg-card shadow-premium dark:shadow-premium-dark">
+          <div className="px-6 py-5 border-b border-border/60 flex items-center justify-between">
+            <h3 className="type-card-title text-card-foreground">
               Recent Activity
             </h3>
           </div>
-          <div className="divide-y divide-white/[0.06]">
+          <div className="divide-y divide-border/40">
             {recent.length === 0 ? (
-              <div className="px-5 py-10 text-center text-sm text-neutral-500">
-                No jobs yet. Add your first job to get started.
+              <div className="px-6 py-16 flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 border border-border/40 text-muted-foreground/50 shadow-sm">
+                  <Ghost className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <h4 className="text-[15px] font-semibold tracking-tight text-foreground mb-1">It's quiet in here</h4>
+                <p className="text-[14px] text-muted-foreground mb-6 leading-relaxed max-w-[250px]">Start tracking your applications to see recent activity appear here.</p>
               </div>
             ) : (
               recent.map((job) => (
                 <div
                   key={job.id}
-                  className="px-5 py-3 flex items-center justify-between"
+                  className="px-6 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors duration-200"
                 >
                   <div>
-                    <p className="text-sm text-neutral-200">
-                      <span className="font-medium">{job.company}</span>
+                    <p className="text-[14px] text-foreground font-medium mb-0.5">
+                      {job.company}
                       {job.job_title && (
-                        <span className="text-neutral-500">
+                        <span className="text-muted-foreground font-normal">
                           {" "}
                           · {job.job_title}
                         </span>
                       )}
                     </p>
                     {job.location && (
-                      <p className="text-xs text-neutral-500 mt-0.5">
+                      <p className="text-[13px] text-muted-foreground">
                         {job.location}
                       </p>
                     )}
@@ -168,78 +189,87 @@ export default function Dashboard() {
         </div>
 
         {/* Upcoming Interviews */}
-        <div className="rounded-xl border border-white/[0.06] bg-neutral-950">
-          <div className="px-6 py-4 border-b border-white/[0.06]">
-            <h3 className="type-card-title text-neutral-200">
+        <div className="rounded-[16px] border border-border/60 bg-card shadow-premium dark:shadow-premium-dark">
+          <div className="px-6 py-5 border-b border-border/60 flex items-center justify-between">
+            <h3 className="type-card-title text-card-foreground">
               Upcoming Interviews
             </h3>
           </div>
-          <div className="p-5">
+          <div className="p-6">
             {upcoming.length === 0 ? (
-              <div className="text-center py-6">
-                <Calendar
-                  className="w-6 h-6 text-neutral-700 mx-auto mb-2"
-                  strokeWidth={1.5}
-                />
-                <p className="text-sm text-neutral-500">
-                  No interviews scheduled
-                </p>
-                <p className="text-xs text-neutral-700 mt-1">
+              <div className="text-center py-12 flex flex-col items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 border border-border/40 text-muted-foreground/50 shadow-sm">
+                  <CalendarX2
+                    className="w-6 h-6 text-muted-foreground"
+                    strokeWidth={1.5}
+                  />
+                </div>
+                <h4 className="text-[15px] font-semibold tracking-tight text-foreground mb-1">No interviews scheduled</h4>
+                <p className="text-[14px] text-muted-foreground leading-relaxed">
                   Set an interview date to see it here.
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {upcoming.map((job) => (
                   <div
                     key={job.id}
-                    className="flex items-center justify-between text-sm"
+                    className="flex items-center justify-between group cursor-default"
                   >
                     <div>
-                      <p className="text-neutral-200 font-medium">
+                      <p className="text-[14px] font-medium text-foreground group-hover:text-primary transition-colors">
                         {job.company}
                       </p>
-                      <p className="text-xs text-neutral-500">
+                      <p className="text-[13px] text-muted-foreground mt-0.5">
                         {job.job_title}
                       </p>
                     </div>
-                    <span className="text-xs text-neutral-400">
-                      {new Date(job.interview_date).toLocaleDateString()}
-                    </span>
+                    <div className="bg-primary/10 text-primary px-3 py-1.5 rounded-[6px] text-[12px] font-medium tracking-wide">
+                      {new Date(job.interview_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
 function MetricCard({ label, value, icon: Icon }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-neutral-950 p-6">
-      <div className="flex items-center justify-between mb-2.5">
-        <span className="type-label">{label}</span>
-        <Icon className="w-3.5 h-3.5 text-neutral-500" strokeWidth={1.5} />
+    <motion.div 
+      whileHover={{ y: -2 }}
+      className="rounded-[12px] border border-border/60 bg-card p-5 shadow-sm hover:shadow-md transition-all duration-300"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[13px] font-medium text-muted-foreground">{label}</span>
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-primary" strokeWidth={2} />
+        </div>
       </div>
-      <p className="text-[28px] font-bold text-neutral-100 tnum">{value}</p>
-    </div>
+      <p className="text-[28px] font-[700] text-foreground tracking-tight tnum">{value}</p>
+    </motion.div>
   );
 }
 
 function SkeletonGrid() {
   return (
-    <div className="space-y-6">
-      <div className="h-16 w-48 bg-neutral-900 rounded-lg animate-pulse" />
+    <div className="space-y-8 max-w-[1400px]">
+      <div className="space-y-2">
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-10 w-64" />
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-20 bg-neutral-900 rounded-xl animate-pulse"
-          />
+          <Skeleton key={i} className="h-[110px] rounded-[12px]" />
         ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Skeleton className="lg:col-span-2 h-[300px] rounded-[16px]" />
+        <Skeleton className="h-[300px] rounded-[16px]" />
       </div>
     </div>
   );

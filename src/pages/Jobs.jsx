@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { apiClient } from "@/api/client";
-import { ArrowUpDown, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Minus, Ghost } from "lucide-react";
 import StatusBadge, {
   STATUS_ORDER,
   STATUS_CONFIG,
@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const COLUMNS = [
   { key: "company", label: "Company", sortable: true },
@@ -69,7 +71,7 @@ const formatRelative = (dateStr) => {
 
 const formatSalary = (value) => {
   if (!value) return "—";
-  if (typeof value === "string" && /[₹$€£]/.test(value)) return value;
+  if (typeof value === "string" && /[₹€£]/.test(value)) return value;
   const num =
     typeof value === "number"
       ? value
@@ -268,62 +270,97 @@ export default function Jobs() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="h-20 bg-neutral-900 rounded-lg animate-pulse mb-4" />
-        <div className="h-96 bg-neutral-900 rounded-lg animate-pulse" />
+      <div className="p-8 max-w-[1400px] space-y-8">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-10 w-64" />
+        </div>
+        <div className="rounded-[16px] border border-border/60 p-4">
+          <div className="space-y-3">
+            <Skeleton className="h-12 w-full rounded-[8px]" />
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full rounded-[8px]" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="p-8 max-w-[1400px]">
-      <div className="mb-6">
-        <h2 className="type-label mb-1.5">Jobs</h2>
-        <h1 className="type-page-title text-neutral-100">All applications</h1>
-      </div>
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.03 }
+    }
+  };
 
-      <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-        <table className="w-full table-fixed text-sm">
-          <thead>
-            <tr className="border-b border-white/[0.06] bg-neutral-950">
-              {COLUMNS.map((col) => (
-                <th
-                  key={col.key}
-                  onClick={() => col.sortable && handleSort(col.key)}
-                  style={{ width: COLUMN_WIDTHS[col.key] }}
-                  className={cn(
-                    "text-left px-3 py-3 type-table-head whitespace-nowrap",
-                    col.sortable && "cursor-pointer hover:text-neutral-400",
-                  )}
-                >
-                  {col.label.toUpperCase()}
-                  {col.sortable && <SortIcon colKey={col.key} />}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
+  const itemAnim = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
+  return (
+    <motion.div variants={container} initial="hidden" animate="show" className="p-8 max-w-[1400px]">
+      <motion.div variants={itemAnim} className="mb-6">
+        <h2 className="type-label mb-1.5 text-muted-foreground">Jobs</h2>
+        <h1 className="type-page-title text-foreground">All applications</h1>
+      </motion.div>
+
+      <motion.div variants={itemAnim} className="rounded-[16px] border border-border/60 bg-card overflow-hidden shadow-premium dark:shadow-premium-dark">
+        <div className="w-full overflow-auto">
+          <table className="w-full table-fixed text-[14px]">
+            <thead>
+              <tr className="border-b border-border/60 bg-muted/30">
+                {COLUMNS.map((col) => (
+                  <th
+                    key={col.key}
+                    onClick={() => col.sortable && handleSort(col.key)}
+                    style={{ width: COLUMN_WIDTHS[col.key] }}
+                    className={cn(
+                      "text-left px-4 py-3 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground whitespace-nowrap",
+                      col.sortable && "cursor-pointer hover:text-foreground transition-colors",
+                    )}
+                  >
+                    {col.label}
+                    {col.sortable && <SortIcon colKey={col.key} />}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          <tbody className="divide-y divide-border/40">
             {filtered.length === 0 ? (
               <tr>
                 <td
                   colSpan={COLUMNS.length}
-                  className="px-4 py-16 text-center text-sm text-neutral-500"
+                  className="px-6 py-24 text-center"
                 >
-                  No jobs found. Click{" "}
-                  <button
-                    onClick={openAddJob}
-                    className="text-blue-400 hover:underline"
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center justify-center max-w-sm mx-auto"
                   >
-                    Add Job
-                  </button>{" "}
-                  to get started.
+                    <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 border border-border/40 text-muted-foreground/50 shadow-sm">
+                      <Ghost className="w-6 h-6" strokeWidth={1.5} />
+                    </div>
+                    <h4 className="text-[15px] font-semibold tracking-tight text-foreground mb-1">It's quiet in here</h4>
+                    <p className="text-[14px] text-muted-foreground mb-6 text-center leading-relaxed">
+                      You haven't added any jobs yet. Start tracking your applications to see them appear here.
+                    </p>
+                    <button 
+                      onClick={openAddJob} 
+                      className="inline-flex items-center justify-center h-9 px-4 rounded-[8px] bg-foreground text-background font-medium text-[13px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
+                    >
+                      Add your first job
+                    </button>
+                  </motion.div>
                 </td>
               </tr>
             ) : (
               filtered.map((job) => (
                 <tr
                   key={job.id}
-                  className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.025] transition-colors duration-200 group"
+                  className="group hover:bg-muted/40 transition-colors duration-200"
                 >
                   {COLUMNS.map((col) => (
                     <td
@@ -334,7 +371,7 @@ export default function Jobs() {
                         col.key !== "remote" &&
                         handleCellEdit(job.id, col.key, job[col.key])
                       }
-                      className="px-3 py-3 whitespace-nowrap overflow-hidden"
+                      className="px-4 py-3 whitespace-nowrap overflow-hidden"
                     >
                       {renderCell(job, col)}
                     </td>
@@ -344,11 +381,12 @@ export default function Jobs() {
             )}
           </tbody>
         </table>
-      </div>
-      <p className="type-body-sm text-neutral-500 mt-4">
+        </div>
+      </motion.div>
+      <motion.p variants={itemAnim} className="text-[13px] text-muted-foreground mt-4 ml-1">
         {filtered.length} {filtered.length === 1 ? "job" : "jobs"} ·
         Double-click cells to edit
-      </p>
-    </div>
+      </motion.p>
+    </motion.div>
   );
 }
