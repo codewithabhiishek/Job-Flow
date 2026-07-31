@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.9",
-    "@fontsource/geist-sans": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^4.1.2",
     "@neondatabase/serverless": "^1.1.0",

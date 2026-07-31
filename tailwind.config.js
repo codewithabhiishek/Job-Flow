@@ -62,19 +62,19 @@ module.exports = {
   			}
   		},
   		fontFamily: {
-  			sans: ['Geist', 'Inter', 'system-ui', 'sans-serif'],
-  			mono: ['Geist Mono', 'monospace']
+  			sans: ['Manrope', 'system-ui', 'sans-serif'],
+  			mono: ['monospace']
   		},
       fontSize: {
-        'page-title': ['24px', { lineHeight: '1.3', letterSpacing: '-0.02em', fontWeight: '600' }],
-        'section-title': ['18px', { lineHeight: '1.4', letterSpacing: '-0.01em', fontWeight: '600' }],
-        'card-title': ['14px', { lineHeight: '1.5', letterSpacing: '-0.006em', fontWeight: '600' }],
-        'body-base': ['14px', { lineHeight: '1.6', letterSpacing: '0', fontWeight: '400' }],
-        'body-sm': ['13px', { lineHeight: '1.5', letterSpacing: '0', fontWeight: '400' }],
-        'sidebar-item': ['13px', { lineHeight: '1.5', letterSpacing: '0', fontWeight: '500' }],
-        'button-text': ['13px', { lineHeight: '1.5', letterSpacing: '0', fontWeight: '500' }],
-        'table-text': ['13px', { lineHeight: '1.5', letterSpacing: '0', fontWeight: '400' }],
-        'table-header': ['11px', { lineHeight: '1.2', letterSpacing: '0.05em', fontWeight: '500' }],
+        'page-title': ['24px', { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'section-title': ['18px', { lineHeight: '1.3', letterSpacing: '-0.015em', fontWeight: '600' }],
+        'card-title': ['14px', { lineHeight: '1.4', letterSpacing: '-0.01em', fontWeight: '600' }],
+        'body-base': ['14px', { lineHeight: '1.5', letterSpacing: '-0.005em', fontWeight: '400' }],
+        'body-sm': ['13px', { lineHeight: '1.5', letterSpacing: '-0.005em', fontWeight: '400' }],
+        'sidebar-item': ['13px', { lineHeight: '1.5', letterSpacing: '-0.005em', fontWeight: '500' }],
+        'button-text': ['13px', { lineHeight: '1.5', letterSpacing: '-0.005em', fontWeight: '500' }],
+        'table-text': ['13px', { lineHeight: '1.5', letterSpacing: '-0.005em', fontWeight: '500' }],
+        'table-header': ['11px', { lineHeight: '1.2', letterSpacing: '0.04em', fontWeight: '600' }],
       },
       boxShadow: {
         'card': '0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
