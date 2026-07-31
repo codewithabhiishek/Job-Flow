@@ -1,164 +1,187 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import { apiClient } from "@/api/client";
-import { ArrowUpDown, ArrowUp, ArrowDown, MapPin, Plus } from "lucide-react";
-import StatusBadge, {
-  STATUS_ORDER,
-  STATUS_CONFIG,
-} from "@/components/StatusBadge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
+  ArrowUpDown, ArrowUp, ArrowDown,
+  MapPin, Plus, MoreHorizontal,
+  Pencil, Trash2, Copy, ExternalLink
+} from "lucide-react";
+import StatusBadge, { STATUS_ORDER, STATUS_CONFIG } from "@/components/StatusBadge";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import DeleteJobButton from "@/components/DeleteJobButton";
+import { toast } from "sonner";
 
 // ─── Column definitions ────────────────────────────────────────────────────────
 const COLUMNS = [
-  { key: "company",   label: "Company",      width: "w-[22%]",   sortable: true,  editable: true,  align: "left"   },
-  { key: "job_title", label: "Role",         width: "w-[22%]",   sortable: true,  editable: true,  align: "left"   },
-  { key: "status",    label: "Status",       width: "w-[14%]",   sortable: true,  editable: false, align: "left"   },
-  { key: "location",  label: "Location",     width: "w-[16%]",   sortable: true,  editable: true,  align: "left"   },
-  { key: "salary",    label: "Salary",       width: "w-[12%]",   sortable: false, editable: true,  align: "right"  },
-  { key: "updated",   label: "Updated",      width: "w-[10%]",   sortable: true,  editable: false, align: "right"  },
-  { key: "actions",   label: "",             width: "w-[4%]",    sortable: false, editable: false, align: "center" },
+  { key: "company",   label: "Company",   width: "w-[24%]",  sortable: true,  editable: true  },
+  { key: "job_title", label: "Role",      width: "w-[22%]",  sortable: true,  editable: true  },
+  { key: "status",    label: "Status",    width: "w-[12%]",  sortable: true,  editable: false  },
+  { key: "location",  label: "Location",  width: "w-[18%]",  sortable: true,  editable: true  },
+  { key: "salary",    label: "Salary",    width: "w-[11%]",  sortable: false, editable: true, align: "right" },
+  { key: "source",    label: "Source",    width: "w-[9%]",   sortable: false, editable: false },
+  { key: "actions",   label: "",          width: "w-[4%]",   sortable: false, editable: false },
 ];
 
 const EDITABLE_COLS = COLUMNS.filter(c => c.editable).map(c => c.key);
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-const formatDate = (dateStr) => {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  if (isNaN(d)) return "—";
-  const diff = Date.now() - d.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days < 0)  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7)  return `${days}d ago`;
-  if (days < 14) return "1w ago";
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+// ─── Source badge config ───────────────────────────────────────────────────────
+const SOURCE_CONFIG = {
+  linkedin:   { label: "LinkedIn",   color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/15" },
+  wellfound:  { label: "Wellfound",  color: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/15" },
+  indeed:     { label: "Indeed",     color: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/15" },
+  glassdoor:  { label: "Glassdoor",  color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/15" },
+  naukri:     { label: "Naukri",     color: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/15" },
+  referral:   { label: "Referral",   color: "bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/15" },
+  careers:    { label: "Careers",    color: "bg-muted text-muted-foreground border-border/50" },
+  unstop:     { label: "Unstop",     color: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/15" },
+  other:      { label: "Other",      color: "bg-muted text-muted-foreground border-border/50" },
 };
 
-/**
- * Condenses a salary string to a short, single value for the table cell.
- * "₹50,000 – ₹80,000/month" → "₹50k/mo"
- * "$120,000 - $160,000" → "$120k"
- * "₹8 LPA – ₹12 LPA" → "₹8L"
- * Falls back to original if no number found.
- */
+const getSourceConfig = (source) => {
+  if (!source) return null;
+  const key = source.toLowerCase().trim();
+  return SOURCE_CONFIG[key] || { label: source, color: "bg-muted text-muted-foreground border-border/50" };
+};
+
+// ─── Work-mode chip ────────────────────────────────────────────────────────────
+const WORK_MODE_COLORS = {
+  remote:  "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/15",
+  hybrid:  "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/15",
+  "on-site": "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/15",
+  onsite:  "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/15",
+};
+
+const getWorkModeColor = (mode) => {
+  if (!mode) return null;
+  return WORK_MODE_COLORS[mode.toLowerCase()] || null;
+};
+
+// ─── Salary condensation ───────────────────────────────────────────────────────
 const condenseSalary = (raw) => {
-  if (!raw) return "—";
-  const s = raw.toString();
+  if (!raw) return null;
+  const s = raw.toString().trim();
+  if (!s || s.toLowerCase() === "not disclosed") return "Not disclosed";
 
-  // Detect period suffix
   let period = "";
-  if (/\/?(month|mo|monthly)/i.test(s)) period = "/mo";
-  else if (/\/?(year|yr|annual|annum|pa|lpa)/i.test(s)) period = "/yr";
-  else if (/\/?(hour|hr)/i.test(s)) period = "/hr";
+  if (/\/?(month|mo|monthly)/i.test(s))         period = "/mo";
+  else if (/\/?(year|yr|annual|annum|pa)/i.test(s)) period = "/yr";
+  else if (/lpa/i.test(s))                         period = "";
+  else if (/\/?(hour|hr)/i.test(s))               period = "/hr";
 
-  // Detect currency symbol
   const currMatch = s.match(/[₹$€£¥]/);
   const curr = currMatch ? currMatch[0] : "";
 
-  // Find the FIRST numeric value
+  if (/lpa/i.test(s)) {
+    const n = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+    if (n) return `${curr}${parseFloat(n[1])}L${period || "/yr"}`;
+  }
+
   const numMatch = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
   if (!numMatch) return s.length > 14 ? s.substring(0, 13) + "…" : s;
 
   const num = parseFloat(numMatch[1]);
-
-  // LPA shorthand: numbers like 8, 12 paired with "LPA"
-  if (/lpa/i.test(s)) {
-    return `${curr}${num}L${period || "/yr"}`;
-  }
-
-  // Large numbers: convert to k / M
   if (num >= 1_000_000) return `${curr}${(num / 1_000_000).toFixed(1).replace(/\.0$/, "")}M${period}`;
   if (num >= 1_000)     return `${curr}${Math.round(num / 1_000)}k${period}`;
   return `${curr}${num}${period}`;
 };
 
-const getCompanyAvatar = (companyName) => {
-  if (!companyName) return { initials: "?", color: "bg-muted text-muted-foreground" };
-  const initials = companyName.substring(0, 2).toUpperCase();
-  const hash = companyName.split("").reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+// ─── Company avatar ────────────────────────────────────────────────────────────
+const getCompanyAvatar = (name) => {
+  if (!name) return { initials: "?", color: "bg-muted text-muted-foreground" };
+  const initials = name.substring(0, 2).toUpperCase();
+  const hash = name.split("").reduce((a, c) => c.charCodeAt(0) + ((a << 5) - a), 0);
   const palettes = [
-    "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-    "bg-blue-500/15   text-blue-600   dark:text-blue-400",
-    "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-    "bg-amber-500/15  text-amber-600  dark:text-amber-400",
-    "bg-rose-500/15   text-rose-600   dark:text-rose-400",
-    "bg-sky-500/15    text-sky-600    dark:text-sky-400",
-    "bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400",
+    "bg-violet-500/20 text-violet-600 dark:text-violet-300",
+    "bg-blue-500/20   text-blue-600   dark:text-blue-300",
+    "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300",
+    "bg-amber-500/20  text-amber-600  dark:text-amber-300",
+    "bg-rose-500/20   text-rose-600   dark:text-rose-300",
+    "bg-sky-500/20    text-sky-600    dark:text-sky-300",
+    "bg-fuchsia-500/20 text-fuchsia-600 dark:text-fuchsia-300",
+    "bg-teal-500/20   text-teal-600   dark:text-teal-300",
   ];
   return { initials, color: palettes[Math.abs(hash) % palettes.length] };
 };
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+// ─── Main component ────────────────────────────────────────────────────────────
 export default function Jobs() {
   const { searchQuery, openAddJob } = useOutletContext();
-  const [jobs, setJobs]               = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [sortKey, setSortKey]         = useState("created_date");
-  const [sortDir, setSortDir]         = useState("desc");
+  const [jobs, setJobs]             = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [sortKey, setSortKey]       = useState("created_date");
+  const [sortDir, setSortDir]       = useState("desc");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, company }
 
+  // Inline editing state
   const [selectedRowId, setSelectedRowId] = useState(null);
   const [editingCell, setEditingCell]     = useState(null);
   const [editValue, setEditValue]         = useState("");
   const tableRef = useRef(null);
 
-  // ── Data fetching ────────────────────────────────────────────────────────────
+  // ── Data fetch ───────────────────────────────────────────────────────────────
   useEffect(() => {
     console.log("[Jobs] mounted");
-    let isMounted = true;
-    const load = async () => {
+    let alive = true;
+    (async () => {
       console.log("[Jobs] fetching jobs");
       try {
-        const data = await apiClient.fetchApi('/jobs');
-        if (!isMounted) return;
-        console.log(`[Jobs] API response status: 200, job count: ${data.length}`);
+        const data = await apiClient.fetchApi("/jobs");
+        if (!alive) return;
+        console.log(`[Jobs] fetched ${data.length} jobs`);
         setJobs(data);
       } catch (err) {
-        console.error("[Jobs] Error fetching jobs:", err);
+        console.error("[Jobs] fetch error:", err);
       } finally {
-        if (isMounted) setLoading(false);
+        if (alive) setLoading(false);
       }
-    };
-    load();
-    return () => { isMounted = false; };
+    })();
+    return () => { alive = false; };
   }, []);
 
-  // ── Filtering & sorting ──────────────────────────────────────────────────────
+  // ── Filter + sort ────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let result = [...jobs];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter((j) =>
-        [j.company, j.job_title, j.location, j.salary].some((v) =>
-          (v || "").toLowerCase().includes(q),
-        ),
+      result = result.filter(j =>
+        [j.company, j.job_title, j.location, j.salary, j.source].some(v =>
+          (v || "").toLowerCase().includes(q)
+        )
       );
     }
-    if (statusFilter !== "all") result = result.filter((j) => j.status === statusFilter);
+    if (statusFilter !== "all") result = result.filter(j => j.status === statusFilter);
     result.sort((a, b) => {
       const k  = sortKey === "updated" ? "created_date" : sortKey;
-      const av = a[k] || "";
-      const bv = b[k] || "";
+      const av = a[k] || "", bv = b[k] || "";
       if (av < bv) return sortDir === "asc" ? -1 : 1;
       if (av > bv) return sortDir === "asc" ?  1 : -1;
       return 0;
     });
-    console.log(`[Jobs] raw: ${jobs.length} | filtered: ${result.length}`);
     return result;
   }, [jobs, searchQuery, statusFilter, sortKey, sortDir]);
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
+  // ── Mutations ────────────────────────────────────────────────────────────────
   const handleSort = (key) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("asc"); }
@@ -171,9 +194,43 @@ export default function Jobs() {
     } catch (err) { console.error(err); }
   };
 
-  const removeJob = (jobId) => setJobs(prev => prev.filter(j => j.id !== jobId));
+  const removeJob = async (id) => {
+    try {
+      await apiClient.fetchApi(`/jobs/${id}`, { method: "DELETE" });
+      setJobs(prev => prev.filter(j => j.id !== id));
+      toast.success("Job deleted");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete job");
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
 
-  // ── Keyboard nav ─────────────────────────────────────────────────────────────
+  const duplicateJob = async (job) => {
+    try {
+      const { id, created_date, ...rest } = job;
+      const created = await apiClient.fetchApi("/jobs", {
+        method: "POST",
+        body: JSON.stringify({ ...rest, company: `${rest.company} (copy)` }),
+      });
+      setJobs(prev => [created, ...prev]);
+      toast.success("Job duplicated");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to duplicate job");
+    }
+  };
+
+  // ── Inline edit ──────────────────────────────────────────────────────────────
+  const startEdit = (id, col, val) => { setSelectedRowId(id); setEditingCell({ id, col }); setEditValue(val || ""); };
+  const saveEdit  = (id, col) => {
+    const job = jobs.find(j => j.id === id);
+    if (job && job[col] !== editValue) updateJob(id, { [col]: editValue });
+    setEditingCell(null);
+  };
+
+  // ── Keyboard navigation ──────────────────────────────────────────────────────
   const handleKeyDown = (e) => {
     if (!selectedRowId && !editingCell) return;
     if (!editingCell) {
@@ -187,73 +244,52 @@ export default function Jobs() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedRowId, editingCell, filtered]);
 
-  const startEdit = (id, col, currentValue) => {
-    setSelectedRowId(id);
-    setEditingCell({ id, col });
-    setEditValue(currentValue || "");
-  };
-  const saveEdit = (id, col) => {
-    const job = jobs.find(j => j.id === id);
-    if (job && job[col] !== editValue) updateJob(id, { [col]: editValue });
-    setEditingCell(null);
-  };
   const handleInputKeyDown = (e, id, col) => {
-    if (e.key === "Enter")  { e.preventDefault(); saveEdit(id, col); return; }
-    if (e.key === "Escape") { e.preventDefault(); setEditingCell(null); return; }
+    if (e.key === "Enter")  { e.preventDefault(); saveEdit(id, col); }
+    if (e.key === "Escape") { e.preventDefault(); setEditingCell(null); }
     if (e.key === "Tab") {
       e.preventDefault();
       saveEdit(id, col);
-      const colIdx = EDITABLE_COLS.indexOf(col);
+      const ci = EDITABLE_COLS.indexOf(col);
       if (!e.shiftKey) {
-        if (colIdx < EDITABLE_COLS.length - 1) {
-          const nextCol = EDITABLE_COLS[colIdx + 1];
-          startEdit(id, nextCol, jobs.find(j => j.id === id)?.[nextCol]);
-        } else {
-          const rowIdx = filtered.findIndex(j => j.id === id);
-          if (rowIdx < filtered.length - 1) {
-            const nid = filtered[rowIdx + 1].id;
-            startEdit(nid, EDITABLE_COLS[0], jobs.find(j => j.id === nid)?.[EDITABLE_COLS[0]]);
-          }
+        if (ci < EDITABLE_COLS.length - 1) startEdit(id, EDITABLE_COLS[ci + 1], jobs.find(j => j.id === id)?.[EDITABLE_COLS[ci + 1]]);
+        else {
+          const ri = filtered.findIndex(j => j.id === id);
+          if (ri < filtered.length - 1) { const nid = filtered[ri + 1].id; startEdit(nid, EDITABLE_COLS[0], jobs.find(j => j.id === nid)?.[EDITABLE_COLS[0]]); }
         }
       } else {
-        if (colIdx > 0) {
-          const prevCol = EDITABLE_COLS[colIdx - 1];
-          startEdit(id, prevCol, jobs.find(j => j.id === id)?.[prevCol]);
-        } else {
-          const rowIdx = filtered.findIndex(j => j.id === id);
-          if (rowIdx > 0) {
-            const nid = filtered[rowIdx - 1].id;
-            const lastCol = EDITABLE_COLS[EDITABLE_COLS.length - 1];
-            startEdit(nid, lastCol, jobs.find(j => j.id === nid)?.[lastCol]);
-          }
+        if (ci > 0) startEdit(id, EDITABLE_COLS[ci - 1], jobs.find(j => j.id === id)?.[EDITABLE_COLS[ci - 1]]);
+        else {
+          const ri = filtered.findIndex(j => j.id === id);
+          if (ri > 0) { const nid = filtered[ri - 1].id; const lc = EDITABLE_COLS[EDITABLE_COLS.length - 1]; startEdit(nid, lc, jobs.find(j => j.id === nid)?.[lc]); }
         }
       }
     }
   };
 
-  // ── Sort icon ────────────────────────────────────────────────────────────────
+  // ── Sub-components ───────────────────────────────────────────────────────────
   const SortIcon = ({ colKey }) => {
-    if (sortKey !== colKey) return <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-40 inline-block ml-1 transition-opacity" strokeWidth={1.5} />;
+    if (sortKey !== colKey) return <ArrowUpDown className="w-2.5 h-2.5 opacity-0 group-hover:opacity-40 inline-block ml-1 transition-opacity shrink-0" strokeWidth={1.5} />;
     return sortDir === "asc"
-      ? <ArrowUp   className="w-3 h-3 opacity-70 inline-block ml-1" strokeWidth={1.5} />
-      : <ArrowDown className="w-3 h-3 opacity-70 inline-block ml-1" strokeWidth={1.5} />;
+      ? <ArrowUp   className="w-2.5 h-2.5 opacity-60 inline-block ml-1 shrink-0" strokeWidth={1.5} />
+      : <ArrowDown className="w-2.5 h-2.5 opacity-60 inline-block ml-1 shrink-0" strokeWidth={1.5} />;
   };
 
   // ── Loading skeleton ──────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="px-6 py-6 space-y-6 w-full">
-        <div className="rounded-lg border border-border overflow-hidden">
-          <div className="h-9 bg-muted/30 border-b border-border/70" />
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-[46px] flex items-center px-4 gap-4 border-b border-border/40 last:border-0">
-              <Skeleton className="w-6 h-6 rounded-full shrink-0" />
-              <Skeleton className="h-3.5 w-[18%]" />
-              <Skeleton className="h-3.5 w-[18%]" />
-              <Skeleton className="h-5 w-[80px] rounded-full" />
-              <Skeleton className="h-3.5 w-[14%]" />
-              <Skeleton className="h-3.5 w-[10%] ml-auto" />
-              <Skeleton className="h-3.5 w-[8%]" />
+      <div className="px-6 py-6 w-full">
+        <div className="rounded-[8px] border border-border/60 overflow-hidden">
+          <div className="h-9 bg-muted/20 border-b border-border/60" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-[48px] flex items-center px-4 gap-3 border-b border-border/40 last:border-0">
+              <Skeleton className="w-7 h-7 rounded-[6px] shrink-0" />
+              <Skeleton className="h-3 w-[18%]" />
+              <Skeleton className="h-3 w-[16%] opacity-60" />
+              <Skeleton className="h-5 w-[72px] rounded-full" />
+              <Skeleton className="h-3 w-[14%] opacity-60" />
+              <Skeleton className="h-3 w-[8%] ml-auto opacity-40" />
+              <Skeleton className="h-5 w-[52px] rounded-full opacity-40" />
             </div>
           ))}
         </div>
@@ -265,20 +301,16 @@ export default function Jobs() {
   jobs.forEach(j => { statusCounts[j.status] = (statusCounts[j.status] || 0) + 1; });
 
   return (
-    <div
-      className="flex flex-col min-h-full px-6 lg:px-8 py-7 w-full max-w-full mx-auto"
-      onClick={() => setSelectedRowId(null)}
-    >
-      {/* Page header */}
+    <div className="flex flex-col min-h-full px-6 lg:px-8 py-7 w-full max-w-full" onClick={() => setSelectedRowId(null)}>
+
+      {/* Header */}
       <div className="flex items-center justify-between mb-5 shrink-0">
         <h1 className="text-[20px] font-semibold tracking-tight text-foreground">Jobs</h1>
       </div>
 
       {/* Filter chips */}
       <div className="flex flex-wrap gap-1.5 mb-4 shrink-0" onClick={e => e.stopPropagation()}>
-        <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")} count={jobs.length}>
-          All
-        </FilterChip>
+        <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")} count={jobs.length}>All</FilterChip>
         {STATUS_ORDER.filter(s => statusCounts[s] > 0).map(s => (
           <FilterChip key={s} active={statusFilter === s} onClick={() => setStatusFilter(s)} count={statusCounts[s]}>
             {STATUS_CONFIG[s].label}
@@ -286,17 +318,17 @@ export default function Jobs() {
         ))}
       </div>
 
-      {/* Table container */}
+      {/* Table */}
       <div
-        className="overflow-x-auto rounded-[8px] border border-border/70 bg-card"
+        className="overflow-x-auto rounded-[8px] border border-border/60 bg-card"
         onClick={e => e.stopPropagation()}
       >
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-56 text-center">
-            <p className="text-[13.5px] text-muted-foreground mb-4">No jobs match your criteria.</p>
+          <div className="flex flex-col items-center justify-center h-56 text-center gap-4">
+            <p className="text-[13px] text-muted-foreground">No jobs match your criteria.</p>
             <button
               onClick={openAddJob}
-              className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-primary text-primary-foreground text-[12.5px] font-medium hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary text-primary-foreground text-[12.5px] font-medium hover:opacity-90 transition-opacity"
             >
               <Plus className="w-3.5 h-3.5" strokeWidth={2} />
               Add Job
@@ -304,22 +336,23 @@ export default function Jobs() {
           </div>
         ) : (
           <>
-            {/* ── Desktop table ────────────────────────────────────────────── */}
-            <div className="hidden md:block min-w-[900px]">
+            {/* ── Desktop table ─────────────────────────────────────────────── */}
+            <div className="hidden md:block min-w-[860px]">
               <table className="w-full text-left table-fixed" ref={tableRef}>
-                {/* Header */}
+
+                {/* thead */}
                 <thead>
-                  <tr className="bg-muted/20 border-b border-border/70">
+                  <tr className="border-b border-border/60 bg-muted/10">
                     {COLUMNS.map(col => (
                       <th
                         key={col.key}
                         onClick={() => col.sortable && handleSort(col.key)}
                         className={cn(
-                          "px-4 py-2.5 text-[11px] font-medium uppercase tracking-widest text-muted-foreground/70 group select-none",
+                          "px-4 py-2.5 text-[10.5px] font-medium uppercase tracking-widest text-muted-foreground/50 group select-none",
                           col.width,
                           col.align === "right"  && "text-right",
                           col.align === "center" && "text-center",
-                          col.sortable && "cursor-pointer hover:text-muted-foreground transition-colors",
+                          col.sortable && "cursor-pointer hover:text-muted-foreground/80 transition-colors",
                         )}
                       >
                         {col.label}
@@ -329,160 +362,206 @@ export default function Jobs() {
                   </tr>
                 </thead>
 
-                {/* Body */}
+                {/* tbody */}
                 <tbody>
-                  {filtered.map((job) => {
+                  {filtered.map(job => {
                     const avatar     = getCompanyAvatar(job.company);
                     const isSelected = selectedRowId === job.id;
+                    const salaryStr  = condenseSalary(job.salary);
+                    const sourceConf = getSourceConfig(job.source);
+                    const workMode   = job.work_mode || (job.remote ? "Remote" : null);
+                    const modeColor  = getWorkModeColor(workMode);
+
                     return (
                       <tr
                         key={job.id}
                         onClick={() => setSelectedRowId(job.id)}
                         className={cn(
-                          "group h-[46px] border-b border-border/40 last:border-0 transition-colors duration-75 select-none",
-                          isSelected ? "bg-muted/60" : "hover:bg-muted/30",
+                          "group h-[48px] border-b border-border/40 last:border-0 cursor-pointer",
+                          "transition-colors duration-75 select-none",
+                          isSelected ? "bg-primary/5" : "hover:bg-muted/25",
                         )}
                       >
-                        {COLUMNS.map(col => {
-                          const isEditing = editingCell?.id === job.id && editingCell?.col === col.key;
-
-                          /* ── Company ── */
-                          if (col.key === "company") {
-                            return (
-                              <td
-                                key={col.key}
-                                className="px-4 py-0"
-                                onDoubleClick={() => startEdit(job.id, col.key, job[col.key])}
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className={cn(
-                                    "w-[22px] h-[22px] rounded-[5px] flex items-center justify-center text-[9px] font-bold shrink-0",
-                                    avatar.color,
-                                  )}>
-                                    {avatar.initials}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    {isEditing ? (
-                                      <input
-                                        autoFocus
-                                        value={editValue}
-                                        onChange={e => setEditValue(e.target.value)}
-                                        onKeyDown={e => handleInputKeyDown(e, job.id, col.key)}
-                                        onBlur={() => saveEdit(job.id, col.key)}
-                                        className="w-full bg-transparent border-none outline-none p-0 text-[13px] font-semibold text-foreground"
-                                      />
-                                    ) : (
-                                      <span className="text-[13px] font-semibold text-foreground truncate block leading-none">
-                                        {job.company || "—"}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </td>
-                            );
-                          }
-
-                          /* ── Status ── */
-                          if (col.key === "status") {
-                            return (
-                              <td key={col.key} className="px-4 py-0" onClick={e => e.stopPropagation()}>
-                                <Select value={job.status} onValueChange={v => updateJob(job.id, { status: v })}>
-                                  <SelectTrigger className="h-auto w-auto border-0 p-0 bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none">
-                                    <StatusBadge status={job.status} showChevron />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-popover border-border">
-                                    {STATUS_ORDER.map(s => (
-                                      <SelectItem key={s} value={s} className="text-popover-foreground focus:bg-muted text-[12px]">
-                                        {STATUS_CONFIG[s].label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </td>
-                            );
-                          }
-
-                          /* ── Updated ── */
-                          if (col.key === "updated") {
-                            return (
-                              <td key={col.key} className="px-4 py-0 text-right">
-                                <span className="text-[12px] tabular-nums text-muted-foreground/60">
-                                  {formatDate(job.created_date)}
+                        {/* Company */}
+                        <td
+                          className="px-4 py-0"
+                          onDoubleClick={() => startEdit(job.id, "company", job.company)}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={cn("w-[26px] h-[26px] rounded-[6px] flex items-center justify-center text-[9.5px] font-bold shrink-0", avatar.color)}>
+                              {avatar.initials}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {editingCell?.id === job.id && editingCell?.col === "company" ? (
+                                <input autoFocus value={editValue}
+                                  onChange={e => setEditValue(e.target.value)}
+                                  onKeyDown={e => handleInputKeyDown(e, job.id, "company")}
+                                  onBlur={() => saveEdit(job.id, "company")}
+                                  className="w-full bg-transparent border-none outline-none p-0 text-[13px] font-semibold text-foreground"
+                                />
+                              ) : (
+                                <span className="text-[13px] font-semibold text-foreground truncate block leading-none">
+                                  {job.company || "—"}
                                 </span>
-                              </td>
-                            );
-                          }
+                              )}
+                            </div>
+                          </div>
+                        </td>
 
-                          /* ── Salary ── */
-                          if (col.key === "salary") {
-                            return (
-                              <td
-                                key={col.key}
-                                className="px-4 py-0 text-right"
-                                onDoubleClick={() => startEdit(job.id, col.key, job[col.key])}
-                              >
-                                {isEditing ? (
-                                  <input
-                                    autoFocus
-                                    value={editValue}
-                                    onChange={e => setEditValue(e.target.value)}
-                                    onKeyDown={e => handleInputKeyDown(e, job.id, col.key)}
-                                    onBlur={() => saveEdit(job.id, col.key)}
-                                    className="w-full bg-transparent border-none outline-none p-0 text-[12.5px] tabular-nums text-foreground text-right"
-                                  />
-                                ) : (
-                                  <span className="text-[12.5px] tabular-nums text-muted-foreground">
-                                    {condenseSalary(job.salary)}
-                                  </span>
-                                )}
-                              </td>
-                            );
-                          }
+                        {/* Role */}
+                        <td
+                          className="px-4 py-0"
+                          onDoubleClick={() => startEdit(job.id, "job_title", job.job_title)}
+                        >
+                          {editingCell?.id === job.id && editingCell?.col === "job_title" ? (
+                            <input autoFocus value={editValue}
+                              onChange={e => setEditValue(e.target.value)}
+                              onKeyDown={e => handleInputKeyDown(e, job.id, "job_title")}
+                              onBlur={() => saveEdit(job.id, "job_title")}
+                              className="w-full bg-transparent border-none outline-none p-0 text-[13px] text-foreground"
+                            />
+                          ) : (
+                            <span className="text-[13px] text-foreground/75 font-medium truncate block">
+                              {job.job_title || "—"}
+                            </span>
+                          )}
+                        </td>
 
-                          /* ── Actions ── */
-                          if (col.key === "actions") {
-                            return (
-                              <td key={col.key} className="px-3 py-0 text-center">
-                                <DeleteJobButton jobId={job.id} jobTitle={job.company} onDeleteSuccess={removeJob} />
-                              </td>
-                            );
-                          }
+                        {/* Status */}
+                        <td className="px-4 py-0" onClick={e => e.stopPropagation()}>
+                          <Select value={job.status} onValueChange={v => updateJob(job.id, { status: v })}>
+                            <SelectTrigger className="h-auto w-auto border-0 p-0 bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none [&>svg]:hidden">
+                              <StatusBadge status={job.status} showChevron />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover border-border">
+                              {STATUS_ORDER.map(s => (
+                                <SelectItem key={s} value={s} className="text-popover-foreground focus:bg-muted text-[12px]">
+                                  {STATUS_CONFIG[s].label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
 
-                          /* ── Default: Role, Location ── */
-                          return (
-                            <td
-                              key={col.key}
-                              className="px-4 py-0"
-                              onDoubleClick={() => startEdit(job.id, col.key, job[col.key])}
-                            >
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                {col.key === "location" && !isEditing && job.location && (
-                                  <MapPin className="w-3 h-3 shrink-0 text-muted-foreground/40" strokeWidth={1.5} />
-                                )}
-                                {isEditing ? (
-                                  <input
-                                    autoFocus
-                                    value={editValue}
-                                    onChange={e => setEditValue(e.target.value)}
-                                    onKeyDown={e => handleInputKeyDown(e, job.id, col.key)}
-                                    onBlur={() => saveEdit(job.id, col.key)}
-                                    className="w-full bg-transparent border-none outline-none p-0 text-[13px] text-foreground"
-                                  />
-                                ) : (
+                        {/* Location + work mode */}
+                        <td
+                          className="px-4 py-0"
+                          onDoubleClick={() => startEdit(job.id, "location", job.location)}
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {job.location && !editingCell?.id === job.id && (
+                              <MapPin className="w-3 h-3 shrink-0 text-muted-foreground/30" strokeWidth={1.5} />
+                            )}
+                            {editingCell?.id === job.id && editingCell?.col === "location" ? (
+                              <input autoFocus value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                onKeyDown={e => handleInputKeyDown(e, job.id, "location")}
+                                onBlur={() => saveEdit(job.id, "location")}
+                                className="w-full bg-transparent border-none outline-none p-0 text-[12.5px] text-foreground"
+                              />
+                            ) : (
+                              <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                                <span className="text-[12.5px] text-muted-foreground/70 truncate">
+                                  {job.location || "—"}
+                                </span>
+                                {workMode && modeColor && (
                                   <span className={cn(
-                                    "truncate block text-[13px]",
-                                    col.key === "job_title"
-                                      ? "text-foreground/80 font-medium"
-                                      : "text-muted-foreground/70 font-normal",
-                                    !job[col.key] && "text-muted-foreground/25",
+                                    "shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-[4px] border",
+                                    modeColor
                                   )}>
-                                    {job[col.key] || "—"}
+                                    {workMode}
                                   </span>
                                 )}
                               </div>
-                            </td>
-                          );
-                        })}
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Salary */}
+                        <td
+                          className="px-4 py-0 text-right"
+                          onDoubleClick={() => startEdit(job.id, "salary", job.salary)}
+                        >
+                          {editingCell?.id === job.id && editingCell?.col === "salary" ? (
+                            <input autoFocus value={editValue}
+                              onChange={e => setEditValue(e.target.value)}
+                              onKeyDown={e => handleInputKeyDown(e, job.id, "salary")}
+                              onBlur={() => saveEdit(job.id, "salary")}
+                              className="w-full bg-transparent border-none outline-none p-0 text-[12.5px] text-foreground text-right tabular-nums"
+                            />
+                          ) : (
+                            <span className={cn(
+                              "text-[12.5px] tabular-nums",
+                              salaryStr ? "text-muted-foreground/80" : "text-muted-foreground/25"
+                            )}>
+                              {salaryStr || "—"}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Source badge */}
+                        <td className="px-4 py-0">
+                          {sourceConf ? (
+                            <span className={cn(
+                              "inline-flex items-center text-[10.5px] font-medium px-1.5 py-0.5 rounded-[4px] border truncate max-w-full",
+                              sourceConf.color
+                            )}>
+                              {sourceConf.label}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/25 text-[12px]">—</span>
+                          )}
+                        </td>
+
+                        {/* Actions kebab menu */}
+                        <td className="px-3 py-0" onClick={e => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className={cn(
+                                "w-7 h-7 rounded-md flex items-center justify-center",
+                                "text-muted-foreground/30 hover:text-foreground hover:bg-muted",
+                                "transition-all duration-150",
+                                "opacity-0 group-hover:opacity-100",
+                                "focus:opacity-100 focus:outline-none",
+                              )}>
+                                <MoreHorizontal className="w-4 h-4" strokeWidth={1.8} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44 bg-popover border-border">
+                              <DropdownMenuItem
+                                className="text-[12.5px] gap-2 cursor-pointer"
+                                onSelect={() => startEdit(job.id, "company", job.company)}
+                              >
+                                <Pencil className="w-3.5 h-3.5 opacity-60" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-[12.5px] gap-2 cursor-pointer"
+                                onSelect={() => duplicateJob(job)}
+                              >
+                                <Copy className="w-3.5 h-3.5 opacity-60" />
+                                Duplicate
+                              </DropdownMenuItem>
+                              {job.job_url && (
+                                <DropdownMenuItem
+                                  className="text-[12.5px] gap-2 cursor-pointer"
+                                  onSelect={() => window.open(job.job_url, "_blank")}
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+                                  Open URL
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-[12.5px] gap-2 cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                                onSelect={() => setDeleteTarget({ id: job.id, company: job.company })}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
                       </tr>
                     );
                   })}
@@ -490,49 +569,83 @@ export default function Jobs() {
               </table>
             </div>
 
-            {/* ── Mobile cards ─────────────────────────────────────────────── */}
-            <div className="md:hidden divide-y divide-border/50">
+            {/* ── Mobile list rows ───────────────────────────────────────────── */}
+            <div className="md:hidden divide-y divide-border/40">
               {filtered.map(job => {
-                const avatar = getCompanyAvatar(job.company);
+                const avatar     = getCompanyAvatar(job.company);
+                const salaryStr  = condenseSalary(job.salary);
+                const sourceConf = getSourceConfig(job.source);
+                const workMode   = job.work_mode || (job.remote ? "Remote" : null);
+                const modeColor  = getWorkModeColor(workMode);
                 return (
-                  <div key={job.id} className="p-4 bg-card space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={cn("w-8 h-8 rounded-[6px] flex items-center justify-center text-[11px] font-bold shrink-0", avatar.color)}>
-                          {avatar.initials}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="text-[14px] font-semibold text-foreground truncate leading-snug">{job.company}</h3>
-                          <p className="text-[12.5px] text-foreground/70 truncate leading-snug">{job.job_title}</p>
-                        </div>
+                  <div key={job.id} className="p-4 space-y-3 cursor-pointer hover:bg-muted/20 transition-colors">
+                    <div className="flex items-start gap-3">
+                      <div className={cn("w-8 h-8 rounded-[7px] flex items-center justify-center text-[11px] font-bold shrink-0", avatar.color)}>
+                        {avatar.initials}
                       </div>
-                      <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
-                        <Select value={job.status} onValueChange={v => updateJob(job.id, { status: v })}>
-                          <SelectTrigger className="h-auto w-auto border-0 p-0 bg-transparent shadow-none focus:ring-0">
-                            <StatusBadge status={job.status} />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover border-border">
-                            {STATUS_ORDER.map(s => (
-                              <SelectItem key={s} value={s} className="text-[12px]">
-                                {STATUS_CONFIG[s].label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <DeleteJobButton jobId={job.id} jobTitle={job.company} onDeleteSuccess={removeJob} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="text-[13.5px] font-semibold text-foreground truncate leading-snug">{job.company}</h3>
+                            <p className="text-[12.5px] text-foreground/65 truncate leading-snug">{job.job_title}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+                            <Select value={job.status} onValueChange={v => updateJob(job.id, { status: v })}>
+                              <SelectTrigger className="h-auto w-auto border-0 p-0 bg-transparent shadow-none focus:ring-0 [&>svg]:hidden">
+                                <StatusBadge status={job.status} />
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover border-border">
+                                {STATUS_ORDER.map(s => (
+                                  <SelectItem key={s} value={s} className="text-[12px]">{STATUS_CONFIG[s].label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors">
+                                  <MoreHorizontal className="w-4 h-4" strokeWidth={1.8} />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44 bg-popover border-border">
+                                <DropdownMenuItem className="text-[12.5px] gap-2" onSelect={() => duplicateJob(job)}>
+                                  <Copy className="w-3.5 h-3.5 opacity-60" />Duplicate
+                                </DropdownMenuItem>
+                                {job.job_url && (
+                                  <DropdownMenuItem className="text-[12.5px] gap-2" onSelect={() => window.open(job.job_url, "_blank")}>
+                                    <ExternalLink className="w-3.5 h-3.5 opacity-60" />Open URL
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-[12.5px] gap-2 text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                                  onSelect={() => setDeleteTarget({ id: job.id, company: job.company })}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[12px] text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12px] text-muted-foreground/60 pl-11">
                       {job.location && (
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3 h-3 opacity-50" /> {job.location}
                         </span>
                       )}
-                      {job.salary && (
-                        <span className="tabular-nums">{condenseSalary(job.salary)}</span>
+                      {workMode && modeColor && (
+                        <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded border", modeColor)}>
+                          {workMode}
+                        </span>
                       )}
-                      <span className="ml-auto tabular-nums opacity-60">{formatDate(job.created_date)}</span>
+                      {salaryStr && <span className="tabular-nums">{salaryStr}</span>}
+                      {sourceConf && (
+                        <span className={cn("text-[10.5px] font-medium px-1.5 py-0.5 rounded border", sourceConf.color)}>
+                          {sourceConf.label}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -541,6 +654,29 @@ export default function Jobs() {
           </>
         )}
       </div>
+
+      {/* Global delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the application for{" "}
+              <strong className="text-foreground">{deleteTarget?.company}</strong>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && removeJob(deleteTarget.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
@@ -554,7 +690,7 @@ function FilterChip({ children, active, onClick, count }) {
         "inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-[12px] font-medium transition-colors duration-150 border",
         active
           ? "bg-foreground text-background border-foreground/80"
-          : "bg-transparent text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground hover:border-border",
+          : "bg-transparent text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground hover:border-border",
       )}
     >
       {children}
