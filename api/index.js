@@ -136,7 +136,7 @@ app.put('/api/jobs/:id', async (req, res) => {
     if (existing.length === 0 || existing[0].user_id !== userId) {
       return res.status(404).json({ error: 'Not found or unauthorized' });
     }
-    const validation = jobSchema.safeParse(req.body);
+    const validation = jobSchema.partial().safeParse(req.body);
     if (!validation.success) {
       return res.status(400).json({ success: false, error: 'Invalid input', details: validation.error.errors });
     }
