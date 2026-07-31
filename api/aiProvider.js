@@ -1,87 +1,118 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
-dotenv.config(); // fallback
+dotenv.config();
+
+// ─── Job Posting JSON schema enforced at inference level ───────────────────────
+const JOB_JSON_SCHEMA = {
+  name: "job_posting",
+  strict: true,
+  schema: {
+    type: "object",
+    properties: {
+      company:         { type: "string" },
+      job_title:       { type: "string" },
+      location:        { type: "string" },
+      work_mode:       { type: "string" },
+      salary:          { type: "string" },
+      employment_type: { type: "string" },
+      experience:      { type: "string" },
+      education:       { type: "string" },
+      skills:          { type: "array", items: { type: "string" } },
+      deadline:        { type: "string" },
+      job_url:         { type: "string" },
+      benefits:        { type: "array", items: { type: "string" } },
+      notes:           { type: "string" }
+    },
+    required: [
+      "company", "job_title", "location", "work_mode",
+      "salary", "employment_type", "experience", "education",
+      "skills", "deadline", "job_url", "benefits", "notes"
+    ],
+    additionalProperties: false
+  }
+};
+
+// ─── Extraction instructions (embedded in user turn for vision; system for text) ─
+const EXTRACTION_INSTRUCTIONS = `You are a strict JSON extraction engine. Extract job details from the provided content.
+
+RULES:
+1. ONLY extract information EXPLICITLY present. NEVER guess, infer, or hallucinate values.
+2. If a field is missing, return "" (empty string) or [] (empty array). Never return "None" or "null" as a string.
+3. Return ONLY a single valid JSON object. No markdown. No prose. No code fences.
+4. Output must begin with { and end with }.
+
+Field extraction rules:
+- company: Exact company name. Do not shorten.
+- job_title: Exact title as written. Preserve seniority (Intern, Junior, Senior, etc.).
+- location: Full location only. Do NOT include remote/hybrid here.
+- work_mode: One of: "On-site" | "Hybrid" | "Remote" | "" (leave empty if unclear).
+- salary: Only if explicitly stated. Preserve currency and original format.
+- employment_type: One of: "Internship" | "Full-time" | "Part-time" | "Contract" | "Freelance" | "".
+- experience: Years of experience only (e.g. "2+ years"). Not education.
+- education: Degree requirement only (e.g. "Bachelor's degree in CS").
+- skills: Only explicit technical skills. Do NOT invent related technologies.
+- deadline: Application deadline date if explicitly stated, else "".
+- job_url: Leave "" unless a URL is visible in the content.
+- benefits: Only explicitly listed benefits (health, equity, etc.).
+- notes: Always "".`;
 
 export class AIProvider {
   constructor() {
-    this.apiKey = process.env.MINIMAX_API_KEY || ''; 
+    this.apiKey = process.env.MINIMAX_API_KEY || '';
   }
 
   async invokeLLM(payload, type) {
-    const textModel = process.env.TEXT_MODEL || "meta/llama-3.1-8b-instruct";
+    const textModel   = process.env.TEXT_MODEL   || "meta/llama-3.1-8b-instruct";
     const visionModel = process.env.VISION_MODEL || "meta/llama-3.2-11b-vision-instruct";
-    const model = type === "screenshot" ? visionModel : textModel;
-    
-    let systemMessage = `You are a strict JSON extraction engine.
-Extract job details from the provided text or screenshot.
+    const model       = type === "screenshot" ? visionModel : textModel;
 
-CRITICAL RULES:
-1. ONLY extract information explicitly present in the job posting. NEVER infer, guess, hallucinate, or invent values.
-2. If a field is missing, return null or an empty string. Prefer missing data over incorrect data.
-3. Preserve original capitalization and wording whenever possible.
-4. Return ONLY a single, valid JSON object.
-5. Do NOT use markdown code blocks (e.g., \`\`\`json).
-6. Do NOT output any explanations or extra text before or after the JSON.
-7. Output must begin with { and end with }.
-
-Extraction rules for fields:
-- company: Extract the exact company name only. Do not shorten or modify it.
-- job_title: Extract exactly as written. Preserve seniority (Intern, Junior, Senior, Lead, etc.).
-- location: Extract the full location exactly. Do NOT merge work mode into the location string.
-- work_mode: Detect separately (On-site, Hybrid, Remote).
-- salary: Extract only if explicitly mentioned. Preserve currency and range exactly.
-- employment_type: Extract exactly (Internship, Full-time, Part-time, Contract, Temporary, Freelance). Do not guess.
-- experience: ONLY extract years of experience (e.g. "2+ years"). NEVER treat education requirements as experience.
-- education: Extract separately (e.g. "Bachelor's degree", "Master's degree").
-- skills: Extract ONLY technical skills explicitly mentioned. Do NOT invent related technologies.
-- deadline: Extract only if explicitly present. Preserve the actual date.
-- job_url: Preserve the original URL exactly.
-- benefits: Extract only explicitly listed benefits.
-- notes: Leave empty. Do not generate summaries.
-
-Required JSON Schema:
-{
-  "company": "",
-  "job_title": "",
-  "location": "",
-  "work_mode": "",
-  "salary": "",
-  "employment_type": "",
-  "experience": "",
-  "education": "",
-  "skills": [],
-  "deadline": "",
-  "job_url": "",
-  "benefits": [],
-  "notes": ""
-}`;
-
-    const messages = [
-      { role: "system", content: systemMessage }
-    ];
+    // ── Build messages ────────────────────────────────────────────────────────
+    let messages;
 
     if (type === "screenshot") {
-      messages.push({
-        role: "user",
-        content: [
-          { type: "text", text: "Extract details from this job posting screenshot." },
-          { type: "image_url", image_url: { url: payload } }
-        ]
-      });
+      // ROOT CAUSE FIX:
+      // Llama 3.2 Vision silently drops the `system` role when an image is present.
+      // The entire instruction set MUST be embedded in the `user` turn.
+      messages = [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              // Prepend ALL instructions into the user message — the only reliably
+              // processed turn for multimodal requests.
+              text: `${EXTRACTION_INSTRUCTIONS}\n\nExtract job posting details from the screenshot below:`
+            },
+            {
+              type: "image_url",
+              image_url: { url: payload }
+            }
+          ]
+        }
+      ];
     } else {
-      messages.push({
-        role: "user",
-        content: `Extract details from this job posting: \n\n${payload}`
-      });
+      // Text / URL — system message works fine here.
+      messages = [
+        { role: "system", content: EXTRACTION_INSTRUCTIONS },
+        { role: "user",   content: `Extract job details from this content:\n\n${payload}` }
+      ];
     }
 
+    // ── Request payload ───────────────────────────────────────────────────────
     const requestPayload = {
-      model: model,
-      messages: messages,
-      temperature: 0.1,
-      top_p: 0.95,
-      max_tokens: 1024,
-      stream: false
+      model,
+      messages,
+      temperature: 0.05,   // as deterministic as possible
+      top_p: 0.9,
+      max_tokens: 2048,    // schema-enforced JSON needs more room than prose
+      stream: false,
+      // ROOT CAUSE FIX #2:
+      // Enforce structured output at the inference engine level.
+      // This makes it IMPOSSIBLE for the model to output prose or Markdown.
+      response_format: {
+        type: "json_schema",
+        json_schema: JOB_JSON_SCHEMA
+      }
     };
 
     let attempt = 0;
@@ -89,14 +120,13 @@ Required JSON Schema:
 
     while (attempt < maxAttempts) {
       attempt++;
-      const startTime = Date.now();
+      const startTime  = Date.now();
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      const timeoutId  = setTimeout(() => controller.abort(), 30000);
 
       try {
-        console.log(`[AI Request] Attempt ${attempt}/${maxAttempts} | Model: ${model} | Provider: NVIDIA`);
-        console.log(`[AI Request Payload] \n`, JSON.stringify(requestPayload, null, 2));
-        
+        console.log(`[AI Request] Attempt ${attempt}/${maxAttempts} | Model: ${model} | Type: ${type}`);
+
         const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -112,85 +142,81 @@ Required JSON Schema:
 
         if (!response.ok) {
           const errText = await response.text();
-          console.error(`[AI Error] Status: ${response.status} | Duration: ${duration}ms | Msg: ${errText}`);
-          if (attempt === maxAttempts) throw new Error(`API returned ${response.status}`);
-          continue; // retry
+          console.error(`[AI Error] Status: ${response.status} | ${duration}ms | ${errText}`);
+          if (attempt === maxAttempts) throw new Error(`NVIDIA API returned ${response.status}: ${errText}`);
+          continue;
         }
 
-        const data = await response.json();
-        console.log(`[AI Request Info]`);
-        console.log(`- Model: ${model}`);
-        console.log(`- Payload Size (bytes): ${payload.length}`);
-        
+        const data    = await response.json();
         const content = data.choices[0].message.content;
-        
-        console.log(`[AI Success] Status: 200 | Duration: ${duration}ms`);
+
+        console.log(`[AI Success] ${duration}ms | Model: ${model}`);
         console.log("================ RAW MODEL OUTPUT ================");
         console.log(content);
         console.log("==================================================");
 
+        // ── Parse ─────────────────────────────────────────────────────────────
         let jsonString = "";
         try {
-          // Find first '{' and last '}'
+          // With response_format: json_schema the content WILL be valid JSON.
+          // The brace-extraction is kept as a safety net for edge cases.
           const firstBrace = content.indexOf('{');
-          const lastBrace = content.lastIndexOf('}');
-          
-          if (firstBrace === -1 || lastBrace === -1) {
-            throw new Error("No JSON object found in response");
-          }
-          
-          jsonString = content.substring(firstBrace, lastBrace + 1);
-          
-          // Use standard JSON.parse WITHOUT regex hacks
-          const parsed = JSON.parse(jsonString);
+          const lastBrace  = content.lastIndexOf('}');
+          if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON object in response");
 
-          // Post-processing logic to enforce rules
-          const sanitizeStr = (val) => (val && typeof val === 'string' && val.trim().toLowerCase() !== 'none' && val.trim().toLowerCase() !== 'null' ? val.trim() : "");
-          const sanitizeArr = (val) => (Array.isArray(val) ? val.filter(v => v && v.trim().toLowerCase() !== 'none') : []);
+          jsonString     = content.substring(firstBrace, lastBrace + 1);
+          const parsed   = JSON.parse(jsonString);
+
+          const sanitizeStr = (v) =>
+            v && typeof v === 'string' && !['none','null','n/a','undefined'].includes(v.trim().toLowerCase())
+              ? v.trim()
+              : "";
+          const sanitizeArr = (v) =>
+            Array.isArray(v) ? v.filter(x => x && !['none','null'].includes((x+'').trim().toLowerCase())) : [];
 
           const processed = {
-            company: sanitizeStr(parsed.company),
-            job_title: sanitizeStr(parsed.job_title),
-            location: sanitizeStr(parsed.location),
-            work_mode: sanitizeStr(parsed.work_mode),
-            remote: sanitizeStr(parsed.work_mode).toLowerCase() === 'remote' || parsed.remote === true,
-            salary: sanitizeStr(parsed.salary),
+            company:         sanitizeStr(parsed.company),
+            job_title:       sanitizeStr(parsed.job_title),
+            location:        sanitizeStr(parsed.location),
+            work_mode:       sanitizeStr(parsed.work_mode),
+            remote:          sanitizeStr(parsed.work_mode).toLowerCase() === 'remote' || parsed.remote === true,
+            salary:          sanitizeStr(parsed.salary),
             employment_type: sanitizeStr(parsed.employment_type),
-            experience: sanitizeStr(parsed.experience),
-            education: sanitizeStr(parsed.education),
-            skills: sanitizeArr(parsed.skills),
-            deadline: sanitizeStr(parsed.deadline),
-            job_url: sanitizeStr(parsed.job_url),
-            benefits: sanitizeArr(parsed.benefits),
-            notes: "" // explicitly empty as per rules
+            experience:      sanitizeStr(parsed.experience),
+            education:       sanitizeStr(parsed.education),
+            skills:          sanitizeArr(parsed.skills),
+            deadline:        sanitizeStr(parsed.deadline),
+            job_url:         sanitizeStr(parsed.job_url),
+            benefits:        sanitizeArr(parsed.benefits),
+            notes:           ""
           };
 
+          console.log(`[AI Parsed] company="${processed.company}" title="${processed.job_title}" location="${processed.location}"`);
           return processed;
+
         } catch (parseError) {
           console.error("================ PARSE ERROR ================");
           console.error("JSON.parse error:", parseError.message);
-          console.error("--- String attempted to parse:");
-          console.error(jsonString);
+          console.error("String attempted:", jsonString || content);
           console.error("=============================================");
-          
           if (attempt === maxAttempts) throw new Error("AI returned invalid JSON format.");
         }
 
       } catch (error) {
         clearTimeout(timeoutId);
         const duration = Date.now() - startTime;
-        
+
         if (error.name === 'AbortError') {
-          console.error(`[AI Timeout] Duration: >15000ms | Request timed out`);
+          console.error(`[AI Timeout] Request timed out after ${duration}ms`);
         } else {
-          console.error(`[AI Exception] Duration: ${duration}ms | ${error.message}`);
+          console.error(`[AI Exception] ${duration}ms | ${error.message}`);
         }
 
         if (attempt === maxAttempts) {
           return {
             success: false,
             stage: "AI Provider",
-            error: error.name === 'AbortError' ? "Request timed out after 15s" : error.message,
+            error: error.name === 'AbortError' ? "Request timed out after 30s" : error.message,
             details: `Model: ${model}, Type: ${type}`
           };
         }
