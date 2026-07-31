@@ -75,25 +75,43 @@ app.post('/api/ai/invoke', async (req, res) => {
     let result;
 
     if (method === "url") {
-      const response = await fetch(payload);
-      if (!response.ok) throw new Error("Failed to fetch job URL");
-      const html = await response.text();
-      const $ = cheerio.load(html);
-      $('script, style, noscript, iframe, img, svg, head').remove();
-      const text = $('body').text().replace(/\s+/g, ' ').trim();
-      result = await aiProvider.invokeLLM(text, "url");
+      try {
+        const response = await fetch(payload);
+        if (!response.ok) throw new Error("Failed to fetch job URL");
+        const html = await response.text();
+        const $ = cheerio.load(html);
+        $('script, style, noscript, iframe, img, svg, head').remove();
+        const text = $('body').text().replace(/\s+/g, ' ').trim();
+        result = await aiProvider.invokeLLM(text, "url");
+      } catch (fetchErr) {
+        return res.json({
+          success: false,
+          stage: "URL Fetch",
+          error: fetchErr.message,
+          details: `Failed to scrape URL: ${payload}`
+        });
+      }
     } else if (method === "screenshot") {
-      // payload is base64 string
       result = await aiProvider.invokeLLM(payload, "screenshot");
     } else if (method === "text") {
       result = await aiProvider.invokeLLM(payload, "text");
     } else {
-      throw new Error("Invalid extraction method");
+      return res.json({
+        success: false,
+        stage: "Request Validation",
+        error: "Invalid extraction method",
+        details: `Method provided: ${method}`
+      });
     }
     
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.json({
+      success: false,
+      stage: "Server Processing",
+      error: error.message,
+      details: "An unexpected server error occurred."
+    });
   }
 });
 

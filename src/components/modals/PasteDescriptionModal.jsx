@@ -34,6 +34,9 @@ export default function PasteDescriptionModal({ open, onOpenChange, onExtract })
           payload: text,
         }),
       });
+      if (result.success === false) {
+        throw new Error(`${result.stage}: ${result.error}`);
+      }
       onExtract({ ...result, source: "text" });
       handleClose(false);
     } catch (err) {

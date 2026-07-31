@@ -8,7 +8,9 @@ export class AIProvider {
   }
 
   async invokeLLM(payload, type) {
-    console.log("Invoking MiniMax via NVIDIA with type:", type);
+    const textModel = process.env.TEXT_MODEL || "meta/llama-3.1-8b-instruct";
+    const visionModel = process.env.VISION_MODEL || "meta/llama-3.2-11b-vision-instruct";
+    const model = type === "screenshot" ? visionModel : textModel;
     
     let systemMessage = `You are an expert AI recruiter assistant. Extract the job details from the provided text or image into a strict JSON object. 
 If the text does not contain a specific field, leave it null. Do not hallucinate.
@@ -47,7 +49,7 @@ Required JSON format:
     }
 
     const requestPayload = {
-      model: type === "screenshot" ? "meta/llama-3.2-90b-vision-instruct" : "minimaxai/minimax-m3",
+      model: model,
       messages: messages,
       temperature: 0.1,
       top_p: 0.95,
@@ -55,37 +57,70 @@ Required JSON format:
       stream: false
     };
 
-    try {
-      const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestPayload)
-      });
+    let attempt = 0;
+    const maxAttempts = 2;
 
-      if (!response.ok) {
-        const err = await response.text();
-        console.error("NVIDIA API Error:", err);
-        throw new Error("Failed to extract data via AI.");
-      }
+    while (attempt < maxAttempts) {
+      attempt++;
+      const startTime = Date.now();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-      const data = await response.json();
-      const content = data.choices[0].message.content;
-      
-      // Try to parse the JSON output from the model
       try {
-        const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
-        return JSON.parse(cleaned);
-      } catch (parseError) {
-        console.error("Failed to parse JSON from AI response:", content);
-        throw new Error("AI returned invalid JSON format.");
-      }
+        console.log(`[AI Request] Attempt ${attempt}/${maxAttempts} | Model: ${model} | Provider: NVIDIA`);
+        
+        const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestPayload),
+          signal: controller.signal
+        });
 
-    } catch (error) {
-      console.error(error);
-      throw new Error("AI provider error.");
+        clearTimeout(timeoutId);
+        const duration = Date.now() - startTime;
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`[AI Error] Status: ${response.status} | Duration: ${duration}ms | Msg: ${errText}`);
+          if (attempt === maxAttempts) throw new Error(`API returned ${response.status}`);
+          continue; // retry
+        }
+
+        const data = await response.json();
+        const content = data.choices[0].message.content;
+        
+        console.log(`[AI Success] Status: 200 | Duration: ${duration}ms`);
+
+        try {
+          const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
+          return JSON.parse(cleaned);
+        } catch (parseError) {
+          console.error("[AI Parse Error] Failed to parse JSON from response.");
+          if (attempt === maxAttempts) throw new Error("AI returned invalid JSON format.");
+        }
+
+      } catch (error) {
+        clearTimeout(timeoutId);
+        const duration = Date.now() - startTime;
+        
+        if (error.name === 'AbortError') {
+          console.error(`[AI Timeout] Duration: >15000ms | Request timed out`);
+        } else {
+          console.error(`[AI Exception] Duration: ${duration}ms | ${error.message}`);
+        }
+
+        if (attempt === maxAttempts) {
+          return {
+            success: false,
+            stage: "AI Provider",
+            error: error.name === 'AbortError' ? "Request timed out after 15s" : error.message,
+            details: `Model: ${model}, Type: ${type}`
+          };
+        }
+      }
     }
   }
 }

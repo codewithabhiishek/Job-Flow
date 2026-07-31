@@ -42,6 +42,9 @@ export default function UploadScreenshotModal({ open, onOpenChange, onExtract })
           payload: base64,
         }),
       });
+      if (result.success === false) {
+        throw new Error(`${result.stage}: ${result.error}`);
+      }
       onExtract({ ...result, source: "screenshot" });
       handleClose(false);
     } catch (err) {

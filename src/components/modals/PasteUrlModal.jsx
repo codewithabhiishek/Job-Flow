@@ -41,6 +41,9 @@ export default function PasteUrlModal({ open, onOpenChange, onExtract }) {
           payload: url,
         }),
       });
+      if (result.success === false) {
+        throw new Error(`${result.stage}: ${result.error}`);
+      }
       onExtract({ ...result, job_url: url, source: "url" });
       handleClose(false);
     } catch (err) {
