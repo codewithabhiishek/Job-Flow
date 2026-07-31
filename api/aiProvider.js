@@ -91,10 +91,11 @@ Required JSON Schema:
       attempt++;
       const startTime = Date.now();
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
       try {
         console.log(`[AI Request] Attempt ${attempt}/${maxAttempts} | Model: ${model} | Provider: NVIDIA`);
+        console.log(`[AI Request Payload] \n`, JSON.stringify(requestPayload, null, 2));
         
         const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
           method: "POST",
@@ -117,6 +118,10 @@ Required JSON Schema:
         }
 
         const data = await response.json();
+        console.log(`[AI Request Info]`);
+        console.log(`- Model: ${model}`);
+        console.log(`- Payload Size (bytes): ${payload.length}`);
+        
         const content = data.choices[0].message.content;
         
         console.log(`[AI Success] Status: 200 | Duration: ${duration}ms`);
@@ -125,38 +130,19 @@ Required JSON Schema:
         console.log("==================================================");
 
         let jsonString = "";
-        let sanitizedJson = "";
         try {
-          // Clean the content by removing markdown formatting
-          let cleanContent = content.trim();
-          if (cleanContent.startsWith('```json')) cleanContent = cleanContent.replace(/^```json/i, '');
-          else if (cleanContent.startsWith('```')) cleanContent = cleanContent.replace(/^```/, '');
-          if (cleanContent.endsWith('```')) cleanContent = cleanContent.replace(/```$/, '');
-          cleanContent = cleanContent.trim();
-
-          const firstBrace = cleanContent.indexOf('{');
-          const lastBrace = cleanContent.lastIndexOf('}');
+          // Find first '{' and last '}'
+          const firstBrace = content.indexOf('{');
+          const lastBrace = content.lastIndexOf('}');
           
           if (firstBrace === -1 || lastBrace === -1) {
             throw new Error("No JSON object found in response");
           }
           
-          jsonString = cleanContent.substring(firstBrace, lastBrace + 1);
+          jsonString = content.substring(firstBrace, lastBrace + 1);
           
-          // Basic sanitization of common JSON errors from LLMs (trailing commas, unescaped newlines)
-          sanitizedJson = jsonString
-            .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
-            .replace(/\n/g, "\\n") // Escape literal newlines within strings (naive approach, but helps)
-            .replace(/\r/g, "\\r")
-            .replace(/\t/g, "\\t");
-
-          // Restore structural newlines for braces/brackets so parse error logs remain readable
-          sanitizedJson = sanitizedJson
-            .replace(/\\n\s*}/g, "\n}")
-            .replace(/{\\n/g, "{\n")
-            .replace(/,\s*\\n/g, ",\n");
-
-          const parsed = JSON.parse(sanitizedJson);
+          // Use standard JSON.parse WITHOUT regex hacks
+          const parsed = JSON.parse(jsonString);
 
           // Post-processing logic to enforce rules
           const sanitizeStr = (val) => (val && typeof val === 'string' && val.trim().toLowerCase() !== 'none' && val.trim().toLowerCase() !== 'null' ? val.trim() : "");
@@ -183,10 +169,8 @@ Required JSON Schema:
         } catch (parseError) {
           console.error("================ PARSE ERROR ================");
           console.error("JSON.parse error:", parseError.message);
-          console.error("--- Cleaned response (jsonString):");
+          console.error("--- String attempted to parse:");
           console.error(jsonString);
-          console.error("--- Sanitized response (sanitizedJson):");
-          console.error(sanitizedJson);
           console.error("=============================================");
           
           if (attempt === maxAttempts) throw new Error("AI returned invalid JSON format.");
