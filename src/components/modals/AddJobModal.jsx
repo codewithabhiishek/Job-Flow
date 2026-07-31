@@ -92,8 +92,13 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
       const extractedPayload = { ...result, source: method };
       if (method === "url") extractedPayload.job_url = url;
       
+      // Pass data to AppLayout to open ReviewJobModal
       onExtract(extractedPayload);
-      handleClose(false);
+      
+      // Clean up local state for the next time it opens
+      setFile(null);
+      setUrl("");
+      setText("");
     } catch (err) {
       toast({ title: "Extraction failed", description: err.message, variant: "destructive" });
     } finally {
