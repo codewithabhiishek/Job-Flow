@@ -10,7 +10,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [

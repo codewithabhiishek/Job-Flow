@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "@/api/client";
 import { useToast } from "@/components/ui/use-toast";
-import StatusBadge, { STATUS_ORDER } from "./StatusBadge";
+import { STATUS_ORDER } from "./StatusBadge";
 import {
   Select,
   SelectContent,

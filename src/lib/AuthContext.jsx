@@ -1,34 +1,29 @@
 import React, { createContext, useContext, useEffect } from "react";
-import { useUser, useClerk } from "@clerk/clerk-react";
+import { useUser, useClerk, useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { apiClient } from "@/api/client";
 
 const AuthContext = createContext();
 
-const HAS_CLERK_KEY = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-
-const MOCK_USER = {
-  id: "user_demo_123",
-  email: "demo@jobflow.dev",
-  primaryEmailAddress: { emailAddress: "demo@jobflow.dev" },
-  avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=DemoUser",
-  imageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=DemoUser",
-  first_name: "Demo",
-  firstName: "Demo",
-  last_name: "User",
-  lastName: "User",
-  publicMetadata: { role: "admin" },
-  role: "admin",
-};
-
-const ClerkAuthConsumer = ({ children }) => {
+export const AuthProvider = ({ children }) => {
   const { user, isLoaded, isSignedIn } = useUser();
+  const { getToken } = useClerkAuth();
   const clerk = useClerk();
 
   useEffect(() => {
-    if (user?.id) {
-      apiClient.setUserId(user.id);
-    }
-  }, [user]);
+    const updateToken = async () => {
+      if (isSignedIn) {
+        try {
+          const token = await getToken();
+          apiClient.setToken(token);
+        } catch (error) {
+          console.error("Failed to fetch Clerk token", error);
+        }
+      } else {
+        apiClient.setToken(null);
+      }
+    };
+    updateToken();
+  }, [isSignedIn, getToken]);
 
   const value = {
     user: user
@@ -57,35 +52,6 @@ const ClerkAuthConsumer = ({ children }) => {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-const MockAuthConsumer = ({ children }) => {
-  useEffect(() => {
-    apiClient.setUserId(MOCK_USER.id);
-  }, []);
-
-  const value = {
-    user: MOCK_USER,
-    isAuthenticated: true,
-    isSignedIn: true,
-    isLoadingAuth: false,
-    isLoaded: true,
-    authError: null,
-    isDemoMode: true,
-    logout: () => {
-      alert("Running in Demo/Local Mode. Auth is simulated!");
-    },
-    navigateToLogin: () => {},
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const AuthProvider = ({ children }) => {
-  if (HAS_CLERK_KEY) {
-    return <ClerkAuthConsumer>{children}</ClerkAuthConsumer>;
-  }
-  return <MockAuthConsumer>{children}</MockAuthConsumer>;
 };
 
 export const useAuth = () => {

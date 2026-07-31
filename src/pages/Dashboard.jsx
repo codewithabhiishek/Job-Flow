@@ -9,7 +9,6 @@ import {
   Camera,
   Link2,
   ClipboardPaste,
-  Plus,
   CalendarX2,
 } from "lucide-react";
 import { motion } from "framer-motion";

@@ -1,19 +1,22 @@
-const API_URL = 'http://localhost:3001/api';
+const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:3001/api';
 
 class ApiClient {
   constructor() {
-    this.userId = null;
+    this.token = null;
   }
 
-  setUserId(id) {
-    this.userId = id;
+  setToken(token) {
+    this.token = token;
   }
 
   getHeaders() {
-    return {
+    const headers = {
       'Content-Type': 'application/json',
-      'x-user-id': this.userId || '',
     };
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    return headers;
   }
 
   async fetchApi(endpoint, options = {}) {

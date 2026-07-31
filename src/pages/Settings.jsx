@@ -1,6 +1,5 @@
 import { useAuth } from "@/lib/AuthContext";
 import { Sun, Moon, Monitor, Download, Upload, LogOut, Bot } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { apiClient } from "@/api/client";
 import { useTheme } from "@/components/ThemeProvider";
