@@ -4,13 +4,12 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { AnimatePresence, motion } from "framer-motion";
 
-import UploadScreenshotModal from "./modals/UploadScreenshotModal";
-import PasteUrlModal from "./modals/PasteUrlModal";
-import PasteDescriptionModal from "./modals/PasteDescriptionModal";
+import AddJobModal from "./modals/AddJobModal";
 import ReviewJobModal from "./modals/ReviewJobModal";
 
 export default function AppLayout() {
-  const [activeModal, setActiveModal] = useState(null); // 'screenshot', 'url', 'text', 'review'
+  const [activeModal, setActiveModal] = useState(null); // 'add-job', 'review'
+  const [addJobDefaultTab, setAddJobDefaultTab] = useState("screenshot");
   const [extractedData, setExtractedData] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -35,7 +34,8 @@ export default function AppLayout() {
   }, []);
 
   const openAddJob = (tab = 'screenshot') => {
-    setActiveModal(tab);
+    setAddJobDefaultTab(tab);
+    setActiveModal('add-job');
   };
 
   const handleExtraction = (data) => {
@@ -96,20 +96,9 @@ export default function AppLayout() {
         </main>
       </div>
 
-      <UploadScreenshotModal 
-        open={activeModal === 'screenshot'} 
-        onOpenChange={(open) => !open && setActiveModal(null)} 
-        onExtract={handleExtraction} 
-      />
-      
-      <PasteUrlModal 
-        open={activeModal === 'url'} 
-        onOpenChange={(open) => !open && setActiveModal(null)} 
-        onExtract={handleExtraction} 
-      />
-      
-      <PasteDescriptionModal 
-        open={activeModal === 'text'} 
+      <AddJobModal 
+        open={activeModal === 'add-job'} 
+        defaultTab={addJobDefaultTab}
         onOpenChange={(open) => !open && setActiveModal(null)} 
         onExtract={handleExtraction} 
       />
