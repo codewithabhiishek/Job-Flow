@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 const MONTHS = [
   "January",
@@ -24,23 +25,13 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function CalendarPage() {
   const { searchQuery } = useOutletContext();
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await apiClient.fetchApi('/jobs');
-        setJobs(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const { data: jobs = [], isLoading: loading } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => apiClient.fetchApi('/jobs'),
+    staleTime: 1000 * 60 * 5,
+  });
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();

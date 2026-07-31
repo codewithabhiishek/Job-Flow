@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 
 export const jobs = pgTable('jobs', {
   id: serial('id').primaryKey(),
@@ -20,5 +20,10 @@ export const jobs = pgTable('jobs', {
   interview_date: text('interview_date'),
   source: text('source'),
   created_date: timestamp('created_date').defaultNow(),
-  user_id: text('user_id').notNull(), // To link job to a Clerk user
+  user_id: text('user_id').notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index('user_id_idx').on(table.user_id),
+    createdDateIdx: index('created_date_idx').on(table.created_date)
+  };
 });

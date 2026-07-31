@@ -8,6 +8,7 @@ import {
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { STATUS_CONFIG } from "@/components/StatusBadge";
+import { useQuery } from "@tanstack/react-query";
 
 function AnimatedCounter({ value, suffix = "" }) {
   const count = useMotionValue(0);
@@ -26,22 +27,11 @@ function AnimatedCounter({ value, suffix = "" }) {
 
 export default function Analytics() {
   const { searchQuery } = useOutletContext();
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await apiClient.fetchApi('/jobs');
-        setJobs(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const { data: jobs = [], isLoading: loading } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => apiClient.fetchApi('/jobs'),
+    staleTime: 1000 * 60 * 5,
+  });
 
   const filtered = searchQuery
     ? jobs.filter((j) =>

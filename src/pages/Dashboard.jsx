@@ -14,25 +14,15 @@ import {
 import { motion } from "framer-motion";
 import StatusBadge from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
   const { searchQuery, openAddJob } = useOutletContext();
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await apiClient.fetchApi('/jobs');
-        setJobs(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const { data: jobs = [], isLoading: loading } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => apiClient.fetchApi('/jobs'),
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
 
   const filtered = searchQuery
     ? jobs.filter((j) =>

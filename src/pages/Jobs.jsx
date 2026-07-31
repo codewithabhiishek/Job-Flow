@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOutletContext } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import {
   ArrowUpDown, ArrowUp, ArrowDown,
   Plus, MoreHorizontal,
-  Pencil, Trash2, Copy, ExternalLink
+  Pencil, Trash2, Copy, ExternalLink,
+  Search, ChevronDown, ChevronUp, Clock, GripVertical, Image as ImageIcon, MapPin, Building2, MoreVertical, Edit2, AlertCircle, FileText
 } from "lucide-react";
 import StatusBadge, { STATUS_ORDER, STATUS_CONFIG } from "@/components/StatusBadge";
 import {
@@ -129,8 +131,13 @@ function EditableText({ isEditing, value, editValue, onChange, onKeyDown, onBlur
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Jobs() {
   const { searchQuery, openAddJob } = useOutletContext();
-  const [jobs, setJobs]             = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const queryClient = useQueryClient();
+  const { data: jobs = [], isLoading: loading } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => apiClient.fetchApi('/jobs'),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
   const [sortKey, setSortKey]       = useState("created_date");
   const [sortDir, setSortDir]       = useState("desc");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -139,19 +146,6 @@ export default function Jobs() {
   const [editingCell, setEditingCell]   = useState(null); // { id, col }
   const [editValue, setEditValue]       = useState("");
   const tableRef = useRef(null);
-
-  // ── Fetch ────────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const data = await apiClient.fetchApi("/jobs");
-        if (alive) setJobs(data);
-      } catch (e) { console.error("[Jobs]", e); }
-      finally     { if (alive) setLoading(false); }
-    })();
-    return () => { alive = false; };
-  }, []);
 
   // ── Computed list ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -171,32 +165,62 @@ export default function Jobs() {
     return r;
   }, [jobs, searchQuery, statusFilter, sortKey, sortDir]);
 
-  // ── CRUD ──────────────────────────────────────────────────────────────────────
-  const updateJob = async (id, patch) => {
-    setJobs(prev => prev.map(j => j.id === id ? { ...j, ...patch } : j));
-    try { await apiClient.fetchApi(`/jobs/${id}`, { method: "PUT", body: JSON.stringify(patch) }); }
-    catch (e) { console.error(e); }
-  };
+  // ── CRUD Mutations ────────────────────────────────────────────────────────────
+  const updateMutation = useMutation({
+    mutationFn: ({ id, patch }) => apiClient.fetchApi(`/jobs/${id}`, { method: "PUT", body: JSON.stringify(patch) }),
+    onMutate: async ({ id, patch }) => {
+      await queryClient.cancelQueries({ queryKey: ['jobs'] });
+      const previousJobs = queryClient.getQueryData(['jobs']);
+      queryClient.setQueryData(['jobs'], old => old?.map(j => j.id === id ? { ...j, ...patch } : j) || []);
+      return { previousJobs };
+    },
+    onError: (err, newTodo, context) => {
+      queryClient.setQueryData(['jobs'], context.previousJobs);
+      toast.error("Failed to update job");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    }
+  });
 
-  const removeJob = async (id) => {
-    try {
-      await apiClient.fetchApi(`/jobs/${id}`, { method: "DELETE" });
-      setJobs(prev => prev.filter(j => j.id !== id));
+  const deleteMutation = useMutation({
+    mutationFn: (id) => apiClient.fetchApi(`/jobs/${id}`, { method: "DELETE" }),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['jobs'] });
+      const previousJobs = queryClient.getQueryData(['jobs']);
+      queryClient.setQueryData(['jobs'], old => old?.filter(j => j.id !== id) || []);
+      return { previousJobs };
+    },
+    onError: (err, id, context) => {
+      queryClient.setQueryData(['jobs'], context.previousJobs);
+      toast.error("Failed to delete job");
+    },
+    onSuccess: () => {
       toast.success("Job deleted");
-    } catch (e) { toast.error("Failed to delete"); }
-    finally { setDeleteTarget(null); }
-  };
+      setDeleteTarget(null);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    }
+  });
 
-  const duplicateJob = async (job) => {
-    try {
+  const duplicateMutation = useMutation({
+    mutationFn: (job) => {
       const { id, created_date, ...rest } = job;
-      const created = await apiClient.fetchApi("/jobs", {
+      return apiClient.fetchApi("/jobs", {
         method: "POST", body: JSON.stringify({ ...rest, company: `${rest.company} (copy)` }),
       });
-      setJobs(prev => [created, ...prev]);
+    },
+    onSuccess: (created) => {
+      queryClient.setQueryData(['jobs'], old => [created, ...(old || [])]);
       toast.success("Duplicated");
-    } catch (e) { toast.error("Failed to duplicate"); }
-  };
+    },
+    onError: () => toast.error("Failed to duplicate")
+  });
+
+  const updateJob = (id, patch) => updateMutation.mutate({ id, patch });
+  const removeJob = (id) => deleteMutation.mutate(id);
+  const duplicateJob = (job) => duplicateMutation.mutate(job);
 
   // ── Edit ──────────────────────────────────────────────────────────────────────
   const startEdit = (id, col, val) => { setSelectedRow(id); setEditingCell({ id, col }); setEditValue(val || ""); };

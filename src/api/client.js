@@ -37,10 +37,12 @@ class ApiClient {
     });
 
     const rawText = await response.text();
-    console.log(`[API Response] Status: ${response.status}`);
     const contentType = response.headers.get('content-type') || '';
-    console.log(`[API Response] Content-Type: ${contentType}`);
-    console.log(`[API Response] Raw text (first 500 chars):`, rawText.substring(0, 500));
+
+    // Only log in development and keep it brief
+    if (import.meta.env.DEV) {
+      console.log(`[API Response] ${response.status} | Content-Type: ${contentType}`);
+    }
 
     if (!response.ok) {
       throw new Error(rawText || response.statusText);

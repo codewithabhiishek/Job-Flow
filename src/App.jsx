@@ -7,20 +7,21 @@ import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "r
 import PageNotFound from "./lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import ScrollToTop from "./components/ScrollToTop";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import ForgotPassword from "@/pages/ForgotPassword";
-import ResetPassword from "@/pages/ResetPassword";
-import Landing from "@/pages/Landing";
-import Dashboard from "@/pages/Dashboard";
-import Jobs from "@/pages/Jobs";
-import Kanban from "@/pages/Kanban";
-import CalendarPage from "@/pages/Calendar";
-import Analytics from "@/pages/Analytics";
-import Settings from "@/pages/Settings";
 import AppLayout from "@/components/AppLayout";
 import { apiClient } from "@/api/client";
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
+
+const Login = lazy(() => import("@/pages/Login"));
+const Register = lazy(() => import("@/pages/Register"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const Landing = lazy(() => import("@/pages/Landing"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Jobs = lazy(() => import("@/pages/Jobs"));
+const Kanban = lazy(() => import("@/pages/Kanban"));
+const CalendarPage = lazy(() => import("@/pages/Calendar"));
+const Analytics = lazy(() => import("@/pages/Analytics"));
+const Settings = lazy(() => import("@/pages/Settings"));
 
 const ProtectedRoute = ({ children }) => {
   const { isSignedIn, isLoaded } = useAuth();
@@ -44,23 +45,25 @@ const AuthenticatedApp = () => {
 
   return (
     <LoadingScreen isLoaded={isLoaded}>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
-        <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/jobs" element={<Jobs />} />
-          <Route path="/kanban" element={<Kanban />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-        <Route path="*" element={<PageNotFound />} />
-      </Routes>
+      <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center bg-background"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
+          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/jobs" element={<Jobs />} />
+            <Route path="/kanban" element={<Kanban />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      </Suspense>
     </LoadingScreen>
   );
 };

@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { apiClient } from "@/api/client";
@@ -6,25 +5,17 @@ import { STATUS_ORDER, STATUS_CONFIG } from "@/components/StatusBadge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function Kanban() {
   const { searchQuery, openAddJob } = useOutletContext();
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: jobs = [], isLoading: loading } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => apiClient.fetchApi('/jobs'),
+    staleTime: 1000 * 60 * 5,
+  });
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await apiClient.fetchApi('/jobs');
-        setJobs(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
 
   const filtered = searchQuery
     ? jobs.filter((j) =>
@@ -40,24 +31,30 @@ export default function Kanban() {
     jobs: filtered.filter((j) => j.status === status),
   }));
 
-  const onDragEnd = async (result) => {
+  const updateMutation = useMutation({
+    mutationFn: ({ id, patch }) => apiClient.fetchApi(`/jobs/${id}`, { method: "PUT", body: JSON.stringify(patch) }),
+    onMutate: async ({ id, patch }) => {
+      await queryClient.cancelQueries({ queryKey: ['jobs'] });
+      const previousJobs = queryClient.getQueryData(['jobs']);
+      queryClient.setQueryData(['jobs'], old => old?.map(j => j.id === id ? { ...j, ...patch } : j) || []);
+      return { previousJobs };
+    },
+    onError: (err, newTodo, context) => {
+      queryClient.setQueryData(['jobs'], context.previousJobs);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    }
+  });
+
+  const onDragEnd = (result) => {
     if (!result.destination) return;
     const sourceStatus = result.source.droppableId;
     const destStatus = result.destination.droppableId;
     if (sourceStatus === destStatus) return;
 
     const jobId = result.draggableId;
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, status: destStatus } : j)),
-    );
-    try {
-      await apiClient.fetchApi(`/jobs/${jobId}`, {
-        method: "PUT",
-        body: JSON.stringify({ status: destStatus }),
-      });
-    } catch (err) {
-      console.error(err);
-    }
+    updateMutation.mutate({ id: jobId, patch: { status: destStatus } });
   };
 
   if (loading) {
