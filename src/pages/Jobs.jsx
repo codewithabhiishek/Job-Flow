@@ -16,91 +16,125 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import DeleteJobButton from "@/components/DeleteJobButton";
 
+// ─── Column definitions ────────────────────────────────────────────────────────
 const COLUMNS = [
-  { key: "company", label: "Company", width: "w-[18%]", sortable: true, editable: true },
-  { key: "job_title", label: "Role", width: "w-[18%]", sortable: true, editable: true },
-  { key: "status", label: "Status", width: "w-[14%]", sortable: true, editable: false },
-  { key: "location", label: "Location", width: "w-[14%]", sortable: true, editable: true },
-  { key: "salary", label: "Salary", width: "w-[12%]", sortable: true, align: "right", editable: true },
-  { key: "updated", label: "Last Updated", width: "w-[12%]", sortable: true, align: "right", editable: false },
-  { key: "actions", label: "Actions", width: "w-[160px]", sortable: false, align: "center", editable: false },
+  { key: "company",   label: "Company",      width: "w-[22%]",   sortable: true,  editable: true,  align: "left"   },
+  { key: "job_title", label: "Role",         width: "w-[22%]",   sortable: true,  editable: true,  align: "left"   },
+  { key: "status",    label: "Status",       width: "w-[14%]",   sortable: true,  editable: false, align: "left"   },
+  { key: "location",  label: "Location",     width: "w-[16%]",   sortable: true,  editable: true,  align: "left"   },
+  { key: "salary",    label: "Salary",       width: "w-[12%]",   sortable: false, editable: true,  align: "right"  },
+  { key: "updated",   label: "Updated",      width: "w-[10%]",   sortable: true,  editable: false, align: "right"  },
+  { key: "actions",   label: "",             width: "w-[4%]",    sortable: false, editable: false, align: "center" },
 ];
 
 const EDITABLE_COLS = COLUMNS.filter(c => c.editable).map(c => c.key);
 
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
   if (isNaN(d)) return "—";
   const diff = Date.now() - d.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days < 0) {
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }
+  if (days < 0)  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   if (days === 0) return "Today";
   if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  if (days < 14) return `1w ago`;
+  if (days < 7)  return `${days}d ago`;
+  if (days < 14) return "1w ago";
   if (days < 30) return `${Math.floor(days / 7)}w ago`;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
-const getCompanyAvatar = (companyName) => {
-  if (!companyName) return { initials: "?", bg: "bg-muted", text: "text-muted-foreground" };
-  const initials = companyName.substring(0, 2).toUpperCase();
-  const hash = companyName.split("").reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
-  const colors = [
-    "bg-zinc-800 text-zinc-100 dark:bg-zinc-100 dark:text-zinc-800",
-    "bg-slate-800 text-slate-100 dark:bg-slate-100 dark:text-slate-800",
-    "bg-stone-800 text-stone-100 dark:bg-stone-100 dark:text-stone-800",
-    "bg-neutral-800 text-neutral-100 dark:bg-neutral-100 dark:text-neutral-800",
-    "bg-gray-800 text-gray-100 dark:bg-gray-100 dark:text-gray-800",
-  ];
-  const color = colors[Math.abs(hash) % colors.length];
-  return { initials, color };
+/**
+ * Condenses a salary string to a short, single value for the table cell.
+ * "₹50,000 – ₹80,000/month" → "₹50k/mo"
+ * "$120,000 - $160,000" → "$120k"
+ * "₹8 LPA – ₹12 LPA" → "₹8L"
+ * Falls back to original if no number found.
+ */
+const condenseSalary = (raw) => {
+  if (!raw) return "—";
+  const s = raw.toString();
+
+  // Detect period suffix
+  let period = "";
+  if (/\/?(month|mo|monthly)/i.test(s)) period = "/mo";
+  else if (/\/?(year|yr|annual|annum|pa|lpa)/i.test(s)) period = "/yr";
+  else if (/\/?(hour|hr)/i.test(s)) period = "/hr";
+
+  // Detect currency symbol
+  const currMatch = s.match(/[₹$€£¥]/);
+  const curr = currMatch ? currMatch[0] : "";
+
+  // Find the FIRST numeric value
+  const numMatch = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+  if (!numMatch) return s.length > 14 ? s.substring(0, 13) + "…" : s;
+
+  const num = parseFloat(numMatch[1]);
+
+  // LPA shorthand: numbers like 8, 12 paired with "LPA"
+  if (/lpa/i.test(s)) {
+    return `${curr}${num}L${period || "/yr"}`;
+  }
+
+  // Large numbers: convert to k / M
+  if (num >= 1_000_000) return `${curr}${(num / 1_000_000).toFixed(1).replace(/\.0$/, "")}M${period}`;
+  if (num >= 1_000)     return `${curr}${Math.round(num / 1_000)}k${period}`;
+  return `${curr}${num}${period}`;
 };
 
+const getCompanyAvatar = (companyName) => {
+  if (!companyName) return { initials: "?", color: "bg-muted text-muted-foreground" };
+  const initials = companyName.substring(0, 2).toUpperCase();
+  const hash = companyName.split("").reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+  const palettes = [
+    "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    "bg-blue-500/15   text-blue-600   dark:text-blue-400",
+    "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    "bg-amber-500/15  text-amber-600  dark:text-amber-400",
+    "bg-rose-500/15   text-rose-600   dark:text-rose-400",
+    "bg-sky-500/15    text-sky-600    dark:text-sky-400",
+    "bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400",
+  ];
+  return { initials, color: palettes[Math.abs(hash) % palettes.length] };
+};
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 export default function Jobs() {
   const { searchQuery, openAddJob } = useOutletContext();
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [sortKey, setSortKey] = useState("created_date");
-  const [sortDir, setSortDir] = useState("desc");
+  const [jobs, setJobs]               = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [sortKey, setSortKey]         = useState("created_date");
+  const [sortDir, setSortDir]         = useState("desc");
   const [statusFilter, setStatusFilter] = useState("all");
-  
-  // Spreadsheet state
+
   const [selectedRowId, setSelectedRowId] = useState(null);
-  const [editingCell, setEditingCell] = useState(null); // { id, col }
-  const [editValue, setEditValue] = useState("");
-  
+  const [editingCell, setEditingCell]     = useState(null);
+  const [editValue, setEditValue]         = useState("");
   const tableRef = useRef(null);
 
+  // ── Data fetching ────────────────────────────────────────────────────────────
   useEffect(() => {
     console.log("[Jobs] mounted");
     let isMounted = true;
-    
     const load = async () => {
       console.log("[Jobs] fetching jobs");
       try {
         const data = await apiClient.fetchApi('/jobs');
         if (!isMounted) return;
-        
         console.log(`[Jobs] API response status: 200, job count: ${data.length}`);
-        console.log("[Jobs] jobs stored in state");
         setJobs(data);
       } catch (err) {
         console.error("[Jobs] Error fetching jobs:", err);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
     load();
-    
     return () => { isMounted = false; };
   }, []);
 
+  // ── Filtering & sorting ──────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let result = [...jobs];
     if (searchQuery) {
@@ -111,67 +145,43 @@ export default function Jobs() {
         ),
       );
     }
-    if (statusFilter !== "all")
-      result = result.filter((j) => j.status === statusFilter);
-
+    if (statusFilter !== "all") result = result.filter((j) => j.status === statusFilter);
     result.sort((a, b) => {
-      const k = sortKey === "updated" ? "created_date" : sortKey;
+      const k  = sortKey === "updated" ? "created_date" : sortKey;
       const av = a[k] || "";
       const bv = b[k] || "";
       if (av < bv) return sortDir === "asc" ? -1 : 1;
-      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      if (av > bv) return sortDir === "asc" ?  1 : -1;
       return 0;
     });
-    
-    console.log(`[Jobs] raw jobs length: ${jobs.length} | filtered jobs length: ${result.length}`);
+    console.log(`[Jobs] raw: ${jobs.length} | filtered: ${result.length}`);
     return result;
   }, [jobs, searchQuery, statusFilter, sortKey, sortDir]);
 
+  // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleSort = (key) => {
-    if (sortKey === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
   };
 
   const updateJob = async (id, updates) => {
-    setJobs((prev) =>
-      prev.map((j) => (j.id === id ? { ...j, ...updates } : j)),
-    );
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, ...updates } : j));
     try {
-      await apiClient.fetchApi(`/jobs/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(updates),
-      });
-    } catch (err) {
-      console.error(err);
-    }
+      await apiClient.fetchApi(`/jobs/${id}`, { method: "PUT", body: JSON.stringify(updates) });
+    } catch (err) { console.error(err); }
   };
 
-  const removeJob = (jobId) => {
-    setJobs((prev) => prev.filter((j) => j.id !== jobId));
-  };
+  const removeJob = (jobId) => setJobs(prev => prev.filter(j => j.id !== jobId));
 
-  // --- Keyboard & Inline Edit Handlers ---
+  // ── Keyboard nav ─────────────────────────────────────────────────────────────
   const handleKeyDown = (e) => {
     if (!selectedRowId && !editingCell) return;
-    
-    // Global row navigation if not editing
     if (!editingCell) {
-      const currentIndex = filtered.findIndex(j => j.id === selectedRowId);
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        if (currentIndex < filtered.length - 1) setSelectedRowId(filtered[currentIndex + 1].id);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (currentIndex > 0) setSelectedRowId(filtered[currentIndex - 1].id);
-      }
+      const idx = filtered.findIndex(j => j.id === selectedRowId);
+      if (e.key === "ArrowDown" && idx < filtered.length - 1) { e.preventDefault(); setSelectedRowId(filtered[idx + 1].id); }
+      if (e.key === "ArrowUp"   && idx > 0)                   { e.preventDefault(); setSelectedRowId(filtered[idx - 1].id); }
     }
   };
-
-  // Attach global keyboard listener for row navigation
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -182,82 +192,69 @@ export default function Jobs() {
     setEditingCell({ id, col });
     setEditValue(currentValue || "");
   };
-
   const saveEdit = (id, col) => {
     const job = jobs.find(j => j.id === id);
-    if (job && job[col] !== editValue) {
-      updateJob(id, { [col]: editValue });
-    }
+    if (job && job[col] !== editValue) updateJob(id, { [col]: editValue });
     setEditingCell(null);
   };
-
   const handleInputKeyDown = (e, id, col) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter")  { e.preventDefault(); saveEdit(id, col); return; }
+    if (e.key === "Escape") { e.preventDefault(); setEditingCell(null); return; }
+    if (e.key === "Tab") {
       e.preventDefault();
       saveEdit(id, col);
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      setEditingCell(null);
-    } else if (e.key === "Tab") {
-      e.preventDefault();
-      saveEdit(id, col);
-      
-      const colIndex = EDITABLE_COLS.indexOf(col);
-      if (e.shiftKey) {
-        // move left
-        if (colIndex > 0) {
-          const nextCol = EDITABLE_COLS[colIndex - 1];
-          const job = jobs.find(j => j.id === id);
-          startEdit(id, nextCol, job[nextCol]);
+      const colIdx = EDITABLE_COLS.indexOf(col);
+      if (!e.shiftKey) {
+        if (colIdx < EDITABLE_COLS.length - 1) {
+          const nextCol = EDITABLE_COLS[colIdx + 1];
+          startEdit(id, nextCol, jobs.find(j => j.id === id)?.[nextCol]);
         } else {
-          // move to prev row last col
-          const rowIndex = filtered.findIndex(j => j.id === id);
-          if (rowIndex > 0) {
-            const nextRowId = filtered[rowIndex - 1].id;
-            const nextCol = EDITABLE_COLS[EDITABLE_COLS.length - 1];
-            const job = jobs.find(j => j.id === nextRowId);
-            startEdit(nextRowId, nextCol, job[nextCol]);
+          const rowIdx = filtered.findIndex(j => j.id === id);
+          if (rowIdx < filtered.length - 1) {
+            const nid = filtered[rowIdx + 1].id;
+            startEdit(nid, EDITABLE_COLS[0], jobs.find(j => j.id === nid)?.[EDITABLE_COLS[0]]);
           }
         }
       } else {
-        // move right
-        if (colIndex < EDITABLE_COLS.length - 1) {
-          const nextCol = EDITABLE_COLS[colIndex + 1];
-          const job = jobs.find(j => j.id === id);
-          startEdit(id, nextCol, job[nextCol]);
+        if (colIdx > 0) {
+          const prevCol = EDITABLE_COLS[colIdx - 1];
+          startEdit(id, prevCol, jobs.find(j => j.id === id)?.[prevCol]);
         } else {
-          // move to next row first col
-          const rowIndex = filtered.findIndex(j => j.id === id);
-          if (rowIndex < filtered.length - 1) {
-            const nextRowId = filtered[rowIndex + 1].id;
-            const nextCol = EDITABLE_COLS[0];
-            const job = jobs.find(j => j.id === nextRowId);
-            startEdit(nextRowId, nextCol, job[nextCol]);
+          const rowIdx = filtered.findIndex(j => j.id === id);
+          if (rowIdx > 0) {
+            const nid = filtered[rowIdx - 1].id;
+            const lastCol = EDITABLE_COLS[EDITABLE_COLS.length - 1];
+            startEdit(nid, lastCol, jobs.find(j => j.id === nid)?.[lastCol]);
           }
         }
       }
     }
   };
 
+  // ── Sort icon ────────────────────────────────────────────────────────────────
   const SortIcon = ({ colKey }) => {
-    if (sortKey !== colKey)
-      return (
-        <ArrowUpDown className="w-3 h-3 text-muted-foreground/0 group-hover:text-muted-foreground/50 inline-block ml-1.5 transition-colors" strokeWidth={1.5} />
-      );
-    return sortDir === "asc" ? (
-      <ArrowUp className="w-3 h-3 text-foreground inline-block ml-1.5" strokeWidth={1.5} />
-    ) : (
-      <ArrowDown className="w-3 h-3 text-foreground inline-block ml-1.5" strokeWidth={1.5} />
-    );
+    if (sortKey !== colKey) return <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-40 inline-block ml-1 transition-opacity" strokeWidth={1.5} />;
+    return sortDir === "asc"
+      ? <ArrowUp   className="w-3 h-3 opacity-70 inline-block ml-1" strokeWidth={1.5} />
+      : <ArrowDown className="w-3 h-3 opacity-70 inline-block ml-1" strokeWidth={1.5} />;
   };
 
+  // ── Loading skeleton ──────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="px-6 py-6 space-y-6 w-full">
-        <div className="rounded-lg border border-border">
-          <Skeleton className="h-10 w-full" />
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full" />
+        <div className="rounded-lg border border-border overflow-hidden">
+          <div className="h-9 bg-muted/30 border-b border-border/70" />
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="h-[46px] flex items-center px-4 gap-4 border-b border-border/40 last:border-0">
+              <Skeleton className="w-6 h-6 rounded-full shrink-0" />
+              <Skeleton className="h-3.5 w-[18%]" />
+              <Skeleton className="h-3.5 w-[18%]" />
+              <Skeleton className="h-5 w-[80px] rounded-full" />
+              <Skeleton className="h-3.5 w-[14%]" />
+              <Skeleton className="h-3.5 w-[10%] ml-auto" />
+              <Skeleton className="h-3.5 w-[8%]" />
+            </div>
           ))}
         </div>
       </div>
@@ -265,55 +262,64 @@ export default function Jobs() {
   }
 
   const statusCounts = {};
-  jobs.forEach((j) => { statusCounts[j.status] = (statusCounts[j.status] || 0) + 1; });
+  jobs.forEach(j => { statusCounts[j.status] = (statusCounts[j.status] || 0) + 1; });
 
   return (
-    <div className="flex flex-col min-h-full px-6 lg:px-8 py-8 w-full max-w-full mx-auto" onClick={() => setSelectedRowId(null)}>
-      <div className="flex items-center justify-between mb-6 shrink-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Jobs</h1>
+    <div
+      className="flex flex-col min-h-full px-6 lg:px-8 py-7 w-full max-w-full mx-auto"
+      onClick={() => setSelectedRowId(null)}
+    >
+      {/* Page header */}
+      <div className="flex items-center justify-between mb-5 shrink-0">
+        <h1 className="text-[20px] font-semibold tracking-tight text-foreground">Jobs</h1>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-4 shrink-0" onClick={e => e.stopPropagation()}>
+      {/* Filter chips */}
+      <div className="flex flex-wrap gap-1.5 mb-4 shrink-0" onClick={e => e.stopPropagation()}>
         <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")} count={jobs.length}>
           All
         </FilterChip>
-        {STATUS_ORDER.filter((s) => statusCounts[s] > 0).map((s) => (
+        {STATUS_ORDER.filter(s => statusCounts[s] > 0).map(s => (
           <FilterChip key={s} active={statusFilter === s} onClick={() => setStatusFilter(s)} count={statusCounts[s]}>
             {STATUS_CONFIG[s].label}
           </FilterChip>
         ))}
       </div>
 
-      {/* Table / Cards Container */}
-      <div className="overflow-x-auto rounded-[8px] border border-border bg-card shadow-sm" onClick={e => e.stopPropagation()}>
+      {/* Table container */}
+      <div
+        className="overflow-x-auto rounded-[8px] border border-border/70 bg-card"
+        onClick={e => e.stopPropagation()}
+      >
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <p className="text-[14px] text-muted-foreground mb-4">No jobs match your criteria.</p>
+          <div className="flex flex-col items-center justify-center h-56 text-center">
+            <p className="text-[13.5px] text-muted-foreground mb-4">No jobs match your criteria.</p>
             <button
               onClick={openAddJob}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary text-primary-foreground text-[13px] font-medium hover:opacity-90 transition-opacity shadow-sm"
+              className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-primary text-primary-foreground text-[12.5px] font-medium hover:opacity-90 transition-opacity"
             >
-              <Plus className="w-4 h-4" strokeWidth={2} />
+              <Plus className="w-3.5 h-3.5" strokeWidth={2} />
               Add Job
             </button>
           </div>
         ) : (
           <>
-            {/* Desktop View (Table) */}
-            <div className="hidden md:block min-w-[1050px]">
+            {/* ── Desktop table ────────────────────────────────────────────── */}
+            <div className="hidden md:block min-w-[900px]">
               <table className="w-full text-left table-fixed" ref={tableRef}>
+                {/* Header */}
                 <thead>
-                  <tr>
-                    {COLUMNS.map((col) => (
+                  <tr className="bg-muted/20 border-b border-border/70">
+                    {COLUMNS.map(col => (
                       <th
                         key={col.key}
                         onClick={() => col.sortable && handleSort(col.key)}
                         className={cn(
-                          "px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground truncate group bg-muted/30 border-b border-border/70",
+                          "px-4 py-2.5 text-[11px] font-medium uppercase tracking-widest text-muted-foreground/70 group select-none",
                           col.width,
-                          col.align === "right" ? "text-right" : "text-left",
-                          col.sortable && "cursor-pointer select-none hover:text-foreground transition-colors",
+                          col.align === "right"  && "text-right",
+                          col.align === "center" && "text-center",
+                          col.sortable && "cursor-pointer hover:text-muted-foreground transition-colors",
                         )}
                       >
                         {col.label}
@@ -322,28 +328,37 @@ export default function Jobs() {
                     ))}
                   </tr>
                 </thead>
+
+                {/* Body */}
                 <tbody>
                   {filtered.map((job) => {
-                    const avatar = getCompanyAvatar(job.company);
+                    const avatar     = getCompanyAvatar(job.company);
                     const isSelected = selectedRowId === job.id;
                     return (
                       <tr
                         key={job.id}
                         onClick={() => setSelectedRowId(job.id)}
                         className={cn(
-                          "group h-[52px] transition-colors duration-100 select-none border-b border-border/50 last:border-0",
-                          isSelected ? "bg-muted/80" : "hover:bg-muted/40"
+                          "group h-[46px] border-b border-border/40 last:border-0 transition-colors duration-75 select-none",
+                          isSelected ? "bg-muted/60" : "hover:bg-muted/30",
                         )}
                       >
                         {COLUMNS.map(col => {
                           const isEditing = editingCell?.id === job.id && editingCell?.col === col.key;
-                          
-                          // Render logic for specific columns
-                          if (col.key === 'company') {
+
+                          /* ── Company ── */
+                          if (col.key === "company") {
                             return (
-                              <td key={col.key} className="px-4 py-0 truncate" onDoubleClick={() => startEdit(job.id, col.key, job[col.key])}>
-                                <div className="flex items-center gap-2.5">
-                                  <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0", avatar.color)}>
+                              <td
+                                key={col.key}
+                                className="px-4 py-0"
+                                onDoubleClick={() => startEdit(job.id, col.key, job[col.key])}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className={cn(
+                                    "w-[22px] h-[22px] rounded-[5px] flex items-center justify-center text-[9px] font-bold shrink-0",
+                                    avatar.color,
+                                  )}>
                                     {avatar.initials}
                                   </div>
                                   <div className="flex-1 min-w-0">
@@ -354,11 +369,11 @@ export default function Jobs() {
                                         onChange={e => setEditValue(e.target.value)}
                                         onKeyDown={e => handleInputKeyDown(e, job.id, col.key)}
                                         onBlur={() => saveEdit(job.id, col.key)}
-                                        className="w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] font-medium text-foreground h-full"
+                                        className="w-full bg-transparent border-none outline-none p-0 text-[13px] font-semibold text-foreground"
                                       />
                                     ) : (
-                                      <span className="text-[13px] font-medium text-foreground truncate block">
-                                        {job.company}
+                                      <span className="text-[13px] font-semibold text-foreground truncate block leading-none">
+                                        {job.company || "—"}
                                       </span>
                                     )}
                                   </div>
@@ -366,19 +381,17 @@ export default function Jobs() {
                               </td>
                             );
                           }
-                          
-                          if (col.key === 'status') {
+
+                          /* ── Status ── */
+                          if (col.key === "status") {
                             return (
-                              <td key={col.key} className="px-4 py-0" onClick={(e) => e.stopPropagation()}>
-                                <Select
-                                  value={job.status}
-                                  onValueChange={(v) => updateJob(job.id, { status: v })}
-                                >
+                              <td key={col.key} className="px-4 py-0" onClick={e => e.stopPropagation()}>
+                                <Select value={job.status} onValueChange={v => updateJob(job.id, { status: v })}>
                                   <SelectTrigger className="h-auto w-auto border-0 p-0 bg-transparent hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none">
                                     <StatusBadge status={job.status} showChevron />
                                   </SelectTrigger>
                                   <SelectContent className="bg-popover border-border">
-                                    {STATUS_ORDER.map((s) => (
+                                    {STATUS_ORDER.map(s => (
                                       <SelectItem key={s} value={s} className="text-popover-foreground focus:bg-muted text-[12px]">
                                         {STATUS_CONFIG[s].label}
                                       </SelectItem>
@@ -388,34 +401,63 @@ export default function Jobs() {
                               </td>
                             );
                           }
-                          
-                          if (col.key === 'updated') {
+
+                          /* ── Updated ── */
+                          if (col.key === "updated") {
                             return (
-                              <td key={col.key} className="px-4 py-0 text-right truncate">
-                                <span className="text-[13px] font-medium text-muted-foreground tnum">
+                              <td key={col.key} className="px-4 py-0 text-right">
+                                <span className="text-[12px] tabular-nums text-muted-foreground/60">
                                   {formatDate(job.created_date)}
                                 </span>
                               </td>
                             );
                           }
 
-                          if (col.key === 'actions') {
+                          /* ── Salary ── */
+                          if (col.key === "salary") {
                             return (
-                              <td key={col.key} className="px-4 py-0 text-center">
+                              <td
+                                key={col.key}
+                                className="px-4 py-0 text-right"
+                                onDoubleClick={() => startEdit(job.id, col.key, job[col.key])}
+                              >
+                                {isEditing ? (
+                                  <input
+                                    autoFocus
+                                    value={editValue}
+                                    onChange={e => setEditValue(e.target.value)}
+                                    onKeyDown={e => handleInputKeyDown(e, job.id, col.key)}
+                                    onBlur={() => saveEdit(job.id, col.key)}
+                                    className="w-full bg-transparent border-none outline-none p-0 text-[12.5px] tabular-nums text-foreground text-right"
+                                  />
+                                ) : (
+                                  <span className="text-[12.5px] tabular-nums text-muted-foreground">
+                                    {condenseSalary(job.salary)}
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          }
+
+                          /* ── Actions ── */
+                          if (col.key === "actions") {
+                            return (
+                              <td key={col.key} className="px-3 py-0 text-center">
                                 <DeleteJobButton jobId={job.id} jobTitle={job.company} onDeleteSuccess={removeJob} />
                               </td>
                             );
                           }
-                          
-                          // Default rendering for Role, Location, Salary
+
+                          /* ── Default: Role, Location ── */
                           return (
-                            <td key={col.key} className={cn("px-4 py-0 truncate", col.align === 'right' && "text-right")} onDoubleClick={() => startEdit(job.id, col.key, job[col.key])}>
-                              <div className={cn(
-                                "flex items-center gap-1.5 h-full w-full",
-                                col.align === 'right' && "justify-end"
-                              )}>
-                                {col.key === 'location' && !isEditing && job.location && (
-                                  <MapPin className="w-3.5 h-3.5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                            <td
+                              key={col.key}
+                              className="px-4 py-0"
+                              onDoubleClick={() => startEdit(job.id, col.key, job[col.key])}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {col.key === "location" && !isEditing && job.location && (
+                                  <MapPin className="w-3 h-3 shrink-0 text-muted-foreground/40" strokeWidth={1.5} />
                                 )}
                                 {isEditing ? (
                                   <input
@@ -424,17 +466,15 @@ export default function Jobs() {
                                     onChange={e => setEditValue(e.target.value)}
                                     onKeyDown={e => handleInputKeyDown(e, job.id, col.key)}
                                     onBlur={() => saveEdit(job.id, col.key)}
-                                    className={cn(
-                                      "w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] font-medium text-foreground",
-                                      col.align === 'right' && "text-right tnum"
-                                    )}
+                                    className="w-full bg-transparent border-none outline-none p-0 text-[13px] text-foreground"
                                   />
                                 ) : (
                                   <span className={cn(
-                                    "text-[13px] font-medium truncate block",
-                                    col.key === 'job_title' ? "text-foreground" : "text-muted-foreground",
-                                    col.align === 'right' && "tnum",
-                                    !job[col.key] && "text-muted-foreground/30"
+                                    "truncate block text-[13px]",
+                                    col.key === "job_title"
+                                      ? "text-foreground/80 font-medium"
+                                      : "text-muted-foreground/70 font-normal",
+                                    !job[col.key] && "text-muted-foreground/25",
                                   )}>
                                     {job[col.key] || "—"}
                                   </span>
@@ -450,57 +490,49 @@ export default function Jobs() {
               </table>
             </div>
 
-            {/* Mobile View (Cards) */}
-            <div className="md:hidden divide-y divide-border">
-              {filtered.map((job) => {
+            {/* ── Mobile cards ─────────────────────────────────────────────── */}
+            <div className="md:hidden divide-y divide-border/50">
+              {filtered.map(job => {
                 const avatar = getCompanyAvatar(job.company);
                 return (
-                  <div
-                    key={job.id}
-                    className="p-5 bg-card space-y-4"
-                  >
+                  <div key={job.id} className="p-4 bg-card space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0", avatar.color)}>
+                        <div className={cn("w-8 h-8 rounded-[6px] flex items-center justify-center text-[11px] font-bold shrink-0", avatar.color)}>
                           {avatar.initials}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="text-[14.5px] font-semibold text-foreground truncate">{job.company}</h3>
-                          <p className="text-[13.5px] font-medium text-foreground/80 truncate">{job.job_title}</p>
+                          <h3 className="text-[14px] font-semibold text-foreground truncate leading-snug">{job.company}</h3>
+                          <p className="text-[12.5px] text-foreground/70 truncate leading-snug">{job.job_title}</p>
                         </div>
                       </div>
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <Select
-                          value={job.status}
-                          onValueChange={(v) => updateJob(job.id, { status: v })}
-                        >
+                      <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+                        <Select value={job.status} onValueChange={v => updateJob(job.id, { status: v })}>
                           <SelectTrigger className="h-auto w-auto border-0 p-0 bg-transparent shadow-none focus:ring-0">
                             <StatusBadge status={job.status} />
                           </SelectTrigger>
                           <SelectContent className="bg-popover border-border">
-                            {STATUS_ORDER.map((s) => (
+                            {STATUS_ORDER.map(s => (
                               <SelectItem key={s} value={s} className="text-[12px]">
                                 {STATUS_CONFIG[s].label}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        <DeleteJobButton jobId={job.id} jobTitle={job.company} onDeleteSuccess={removeJob} />
                       </div>
                     </div>
-                    
-                    <div className="flex flex-wrap gap-x-4 gap-y-2.5 text-[12.5px] text-muted-foreground font-medium pt-1">
+
+                    <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[12px] text-muted-foreground">
                       {job.location && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {job.location}
+                          <MapPin className="w-3 h-3 opacity-50" /> {job.location}
                         </span>
                       )}
                       {job.salary && (
-                        <span className="text-foreground/80 tnum">{job.salary}</span>
+                        <span className="tabular-nums">{condenseSalary(job.salary)}</span>
                       )}
-                      <div className="ml-auto flex items-center gap-4">
-                        <span className="tnum">Updated {formatDate(job.created_date)}</span>
-                        <DeleteJobButton jobId={job.id} jobTitle={job.company} onDeleteSuccess={removeJob} />
-                      </div>
+                      <span className="ml-auto tabular-nums opacity-60">{formatDate(job.created_date)}</span>
                     </div>
                   </div>
                 );
@@ -513,20 +545,23 @@ export default function Jobs() {
   );
 }
 
+// ─── FilterChip ────────────────────────────────────────────────────────────────
 function FilterChip({ children, active, onClick, count }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[13px] font-medium transition-colors duration-150 border",
+        "inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-[12px] font-medium transition-colors duration-150 border",
         active
-          ? "bg-foreground text-background border-foreground shadow-sm"
-          : "bg-transparent text-muted-foreground border-border hover:bg-muted hover:text-foreground",
+          ? "bg-foreground text-background border-foreground/80"
+          : "bg-transparent text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground hover:border-border",
       )}
     >
       {children}
       {count > 0 && (
-        <span className={cn("tnum text-[11px]", active ? "opacity-80" : "opacity-50")}>{count}</span>
+        <span className={cn("tabular-nums text-[10.5px]", active ? "opacity-70" : "opacity-40")}>
+          {count}
+        </span>
       )}
     </button>
   );
