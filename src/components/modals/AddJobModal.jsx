@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Camera, Link2, ClipboardPaste, Upload, Loader2, Sparkles, Check } from "lucide-react";
 import { apiClient } from "@/api/client";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,7 +31,6 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
   const [text, setText] = useState("");
   
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
@@ -70,7 +69,7 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
         try {
           new URL(url);
         } catch {
-          toast({ title: "Invalid URL", description: "Please enter a valid https:// URL.", variant: "destructive" });
+          toast.error("Invalid URL", { description: "Please enter a valid https:// URL." });
           setLoading(false);
           return;
         }
@@ -85,23 +84,32 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
         body: JSON.stringify({ method, payload }),
       });
 
-      if (result.success === false) {
+      console.log("[DEBUG] Fetch API complete. Raw result:", result);
+
+      if (result && result.success === false) {
+        console.log("[DEBUG] Result indicates failure. Throwing error.");
         throw new Error(`${result.stage}: ${result.error}`);
       }
 
       const extractedPayload = { ...result, source: method };
       if (method === "url") extractedPayload.job_url = url;
       
+      console.log("[DEBUG] Payload prepared for onExtract:", extractedPayload);
+      
       // Pass data to AppLayout to open ReviewJobModal
+      console.log("[DEBUG] Calling onExtract...");
       onExtract(extractedPayload);
+      console.log("[DEBUG] onExtract called successfully.");
       
       // Clean up local state for the next time it opens
       setFile(null);
       setUrl("");
       setText("");
     } catch (err) {
-      toast({ title: "Extraction failed", description: err.message, variant: "destructive" });
+      console.error("[DEBUG] Exception caught in handleExtract:", err);
+      toast.error("Extraction failed", { description: err.message });
     } finally {
+      console.log("[DEBUG] Finally block executed. Setting loading=false.");
       setLoading(false);
     }
   };

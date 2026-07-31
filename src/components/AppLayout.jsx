@@ -34,14 +34,21 @@ export default function AppLayout() {
   }, []);
 
   const openAddJob = (tab = 'screenshot') => {
+    console.log(`[DEBUG] AppLayout: openAddJob called with tab='${tab}'`);
     setAddJobDefaultTab(tab);
     setActiveModal('add-job');
   };
 
   const handleExtraction = (data) => {
+    console.log("[DEBUG] AppLayout: handleExtraction called with data:", data);
+    console.log(`[DEBUG] AppLayout: Changing activeModal from '${activeModal}' to 'review'`);
     setExtractedData(data);
     setActiveModal('review');
   };
+
+  useEffect(() => {
+    console.log(`[DEBUG] AppLayout: activeModal state is now -> '${activeModal}'`);
+  }, [activeModal]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">

@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, Loader2 } from "lucide-react";
 import { apiClient } from "@/api/client";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { STATUS_ORDER } from "@/components/StatusBadge";
 import {
   Select,
@@ -37,14 +37,23 @@ const EMPTY_JOB = {
 export default function ReviewJobModal({ open, onOpenChange, extractedData, onSaved }) {
   const [data, setData] = useState(EMPTY_JOB);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
   // Load the initial extracted data when the modal opens
   useEffect(() => {
+    console.log(`[DEBUG] ReviewJobModal: useEffect triggered | open: ${open} | extractedData:`, extractedData);
     if (extractedData && open) {
+      console.log("[DEBUG] ReviewJobModal: Setting form data based on extractedData");
       setData({ ...EMPTY_JOB, ...extractedData });
     }
   }, [extractedData, open]);
+
+  useEffect(() => {
+    if (open) {
+      console.log("[DEBUG] ReviewJobModal: Component MOUNTED / OPENED");
+    } else {
+      console.log("[DEBUG] ReviewJobModal: Component UNMOUNTED / CLOSED");
+    }
+  }, [open]);
 
   const handleClose = (isOpen) => {
     if (!isOpen) {
@@ -60,7 +69,7 @@ export default function ReviewJobModal({ open, onOpenChange, extractedData, onSa
 
   const save = async () => {
     if (!data.company?.trim()) {
-      toast({ title: "Company name is required", variant: "destructive" });
+      toast.error("Company name is required");
       return;
     }
     setLoading(true);
@@ -72,11 +81,11 @@ export default function ReviewJobModal({ open, onOpenChange, extractedData, onSa
           skills: Array.isArray(data.skills) ? data.skills : [],
         }),
       });
-      toast({ title: "Job added successfully" });
+      toast.success("Job added successfully");
       handleClose(false);
       if (onSaved) onSaved();
     } catch (err) {
-      toast({ title: "Failed to save job", description: err.message, variant: "destructive" });
+      toast.error("Failed to save job", { description: err.message });
     } finally {
       setLoading(false);
     }
