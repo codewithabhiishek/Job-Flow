@@ -25,6 +25,8 @@ export default function Register() {
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
 
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isLoaded) return;
@@ -85,6 +87,7 @@ export default function Register() {
 
   const handleGoogle = () => {
     if (!isLoaded) return;
+    setGoogleLoading(true);
     signUp.authenticateWithRedirect({
       strategy: "oauth_google",
       redirectUrl: "/sso-callback",
@@ -175,9 +178,14 @@ export default function Register() {
         variant="outline"
         className="w-full h-12 text-sm font-medium mb-6"
         onClick={handleGoogle}
+        disabled={googleLoading}
       >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
+        {googleLoading ? (
+          <Loader2 className="w-5 h-5 mr-2 animate-spin text-muted-foreground" />
+        ) : (
+          <GoogleIcon className="w-5 h-5 mr-2" />
+        )}
+        {googleLoading ? "Connecting..." : "Continue with Google"}
       </Button>
 
       <div className="relative mb-6">

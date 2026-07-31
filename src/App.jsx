@@ -35,6 +35,8 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+import { AuthenticateWithRedirectCallback } from "@clerk/clerk-react";
+
 const AuthenticatedApp = () => {
   const { user, isLoaded, isDemoMode } = useAuth();
   
@@ -57,6 +59,7 @@ const AuthenticatedApp = () => {
         <Route path="/register" element={isDemoMode ? <Navigate to="/dashboard" replace /> : <Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
         <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/jobs" element={<Jobs />} />
