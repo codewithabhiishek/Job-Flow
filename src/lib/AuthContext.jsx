@@ -41,7 +41,6 @@ export const AuthProvider = ({ children }) => {
     isLoadingAuth: !isLoaded,
     isLoaded,
     authError: null,
-    isDemoMode: false,
     logout: (shouldRedirect = true) => {
       if (shouldRedirect) clerk.signOut({ redirectUrl: window.location.href });
       else clerk.signOut();

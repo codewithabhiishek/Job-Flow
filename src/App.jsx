@@ -38,21 +38,16 @@ const ProtectedRoute = ({ children }) => {
 import { AuthenticateWithRedirectCallback } from "@clerk/clerk-react";
 
 const AuthenticatedApp = () => {
-  const { user, isLoaded, isDemoMode } = useAuth();
+  const { user, isLoaded } = useAuth();
   
   // Auth setup is handled inside AuthProvider and apiClient.setToken
 
   return (
     <LoadingScreen isLoaded={isLoaded}>
-      {isDemoMode && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-center text-xs text-amber-300 font-medium z-50 relative">
-          ⚡ <strong>Demo / Development Mode:</strong> Auth is simulated so you can test features right away. Add <code>VITE_CLERK_PUBLISHABLE_KEY</code> in <code>.env</code> when ready for production auth.
-        </div>
-      )}
       <Routes>
-        <Route path="/" element={isDemoMode ? <Navigate to="/dashboard" replace /> : <Landing />} />
-        <Route path="/login" element={isDemoMode ? <Navigate to="/dashboard" replace /> : <Login />} />
-        <Route path="/register" element={isDemoMode ? <Navigate to="/dashboard" replace /> : <Register />} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />

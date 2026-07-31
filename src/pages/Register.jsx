@@ -60,7 +60,8 @@ export default function Register() {
       });
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId });
-        window.location.href = safeReturnTo();
+        const redirectUrl = safeReturnTo() === "/" ? "/dashboard" : safeReturnTo();
+        window.location.href = redirectUrl;
       } else {
         setError("Verification incomplete");
       }
@@ -88,10 +89,11 @@ export default function Register() {
   const handleGoogle = () => {
     if (!isLoaded) return;
     setGoogleLoading(true);
+    const redirectUrl = safeReturnTo() === "/" ? "/dashboard" : safeReturnTo();
     signUp.authenticateWithRedirect({
       strategy: "oauth_google",
       redirectUrl: "/sso-callback",
-      redirectUrlComplete: safeReturnTo(),
+      redirectUrlComplete: redirectUrl,
     });
   };
 
