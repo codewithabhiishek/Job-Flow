@@ -35,7 +35,7 @@ export default function Analytics() {
 
   const filtered = searchQuery
     ? jobs.filter((j) =>
-        [j.company, j.job_title, j.location].some((v) =>
+        [j.company, j.job_title, j.location, j.source, j.status].some((v) =>
           (v || "").toLowerCase().includes(searchQuery.toLowerCase()),
         ),
       )
@@ -104,7 +104,7 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6 max-w-[1200px]">
+      <div className="p-4 md:p-6 lg:p-8  space-y-6 max-w-[1200px]">
         <Skeleton className="h-7 w-28" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -130,7 +130,7 @@ export default function Analytics() {
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-6 space-y-5 max-w-[1200px]">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-4 md:p-6 lg:p-8  space-y-5 max-w-[1200px]">
       <motion.div variants={item}>
         <h1 className="type-page-title text-foreground">Analytics</h1>
       </motion.div>

@@ -9,7 +9,7 @@ import {
   Camera,
   Link2,
   ClipboardPaste,
-  CalendarX2,
+  CalendarX2, Inbox,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import StatusBadge from "@/components/StatusBadge";
@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   const filtered = searchQuery
     ? jobs.filter((j) =>
-        [j.company, j.job_title, j.location].some((v) =>
+        [j.company, j.job_title, j.location, j.source, j.status].some((v) =>
           (v || "").toLowerCase().includes(searchQuery.toLowerCase()),
         ),
       )
@@ -34,7 +34,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 md:p-6 lg:p-8 ">
         <SkeletonGrid />
       </div>
     );
@@ -43,6 +43,21 @@ export default function Dashboard() {
   // Onboarding — no jobs yet
   if (jobs.length === 0) {
     return <Onboarding openAddJob={openAddJob} />;
+  }
+
+  // Empty search state
+  if (filtered.length === 0 && searchQuery) {
+    return (
+      <div className="p-4 md:p-6 lg:p-8 h-full flex flex-col items-center justify-center text-center max-w-[1200px] mx-auto">
+        <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+          <Inbox className="w-8 h-8 text-muted-foreground/50" strokeWidth={1.5} />
+        </div>
+        <h3 className="text-[15px] font-semibold text-foreground mb-1">No results found</h3>
+        <p className="text-[13px] text-muted-foreground max-w-[260px]">
+          We couldn't find any jobs matching "{searchQuery}".
+        </p>
+      </div>
+    );
   }
 
   const stats = {
@@ -80,7 +95,7 @@ export default function Dashboard() {
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-6 space-y-6 max-w-[1200px]">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-4 md:p-6 lg:p-8  space-y-6 max-w-[1200px]">
       <motion.div variants={item}>
         <h1 className="type-page-title text-foreground">Overview</h1>
       </motion.div>

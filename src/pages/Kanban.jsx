@@ -20,7 +20,7 @@ export default function Kanban() {
 
   const filtered = searchQuery
     ? jobs.filter((j) =>
-        [j.company, j.job_title, j.location].some((v) =>
+        [j.company, j.job_title, j.location, j.source, j.status].some((v) =>
           (v || "").toLowerCase().includes(searchQuery.toLowerCase()),
         ),
       )
@@ -60,7 +60,7 @@ export default function Kanban() {
 
   if (loading) {
     return (
-      <div className="p-6 h-full flex flex-col space-y-6">
+      <div className="p-4 md:p-6 lg:p-8  h-full flex flex-col space-y-6">
         <Skeleton className="h-7 w-28" />
         <div className="flex gap-3 overflow-hidden">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -84,15 +84,15 @@ export default function Kanban() {
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-6 h-full flex flex-col">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-4 md:p-6 lg:p-8  h-full flex flex-col">
       <motion.div variants={itemAnim} className="mb-5">
         <h1 className="type-page-title text-foreground">Kanban</h1>
       </motion.div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <motion.div variants={itemAnim} className="flex gap-3 overflow-x-auto flex-1 pb-4">
+        <motion.div variants={itemAnim} className="flex gap-3 overflow-x-auto flex-1 pb-4 snap-x snap-mandatory">
           {columns.map((col) => (
-            <div key={col.status} className="w-[260px] shrink-0 flex flex-col">
+            <div key={col.status} className="w-[260px] shrink-0 flex flex-col snap-center">
               <div className="px-1 mb-2 flex items-center justify-between">
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   {col.label}

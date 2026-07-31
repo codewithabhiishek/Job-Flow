@@ -25,7 +25,7 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
   };
 
   return (
-    <header className="h-14 shrink-0 border-b border-border bg-background flex items-center justify-between px-6 lg:px-8 gap-4">
+    <header className="h-14 shrink-0 border-b border-border bg-background flex items-center justify-between px-4 lg:px-8 gap-2 sm:gap-4">
       {/* Mobile hamburger */}
       <button
         onClick={onToggleMobileSidebar}
@@ -35,7 +35,7 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
       </button>
 
       {/* Search */}
-      <div className="flex-1 max-w-md">
+      <div className="flex-1 min-w-0 max-w-md">
         <div className="relative">
           <Search
             className={cn("absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 transition-colors", isSearchFocused ? "text-foreground" : "text-muted-foreground")}

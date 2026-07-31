@@ -24,7 +24,7 @@ export default function Settings() {
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-6 max-w-2xl space-y-6">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-4 md:p-6 lg:p-8  max-w-2xl space-y-6">
       <motion.div variants={item}>
         <h1 className="type-page-title text-foreground">Settings</h1>
       </motion.div>
