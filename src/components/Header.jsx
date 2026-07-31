@@ -1,9 +1,10 @@
-import { Search, Sun, Moon, Plus, Menu } from "lucide-react";
+import { Search, Plus, Menu } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
+import ThemeSwitch from "@/components/ThemeSwitch";
 
 export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggleMobileSidebar }) {
   const { user } = useAuth();
@@ -18,13 +19,10 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
+  const isDark = theme === "dark";
   const cycleTheme = () => {
-    if (theme === "dark") setTheme("light");
-    else if (theme === "light") setTheme("system");
-    else setTheme("dark");
+    setTheme(isDark ? "light" : "dark");
   };
-
-  const ThemeIcon = theme === "dark" ? Moon : Sun;
 
   return (
     <header className="h-14 shrink-0 border-b border-border bg-background flex items-center justify-between px-6 lg:px-8 gap-4">
@@ -75,13 +73,10 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
 
         <div className="w-px h-5 bg-border mx-1" />
 
-        <button
-          onClick={cycleTheme}
-          title={`Theme: ${theme}`}
-          className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
-          <ThemeIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
-        </button>
+        <ThemeSwitch 
+          checked={!isDark} 
+          onChange={cycleTheme} 
+        />
 
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[11px] font-medium text-white cursor-pointer hover:opacity-90 transition-opacity">
           {initials}
