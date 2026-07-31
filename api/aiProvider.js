@@ -93,12 +93,21 @@ Required JSON format:
         const content = data.choices[0].message.content;
         
         console.log(`[AI Success] Status: 200 | Duration: ${duration}ms`);
+        console.log(`[AI Raw Output] ${content}`);
 
         try {
-          const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
-          return JSON.parse(cleaned);
+          // Extract the JSON object using substring from first '{' to last '}'
+          const firstBrace = content.indexOf('{');
+          const lastBrace = content.lastIndexOf('}');
+          
+          if (firstBrace === -1 || lastBrace === -1) {
+            throw new Error("No JSON object found in response");
+          }
+          
+          const jsonString = content.substring(firstBrace, lastBrace + 1);
+          return JSON.parse(jsonString);
         } catch (parseError) {
-          console.error("[AI Parse Error] Failed to parse JSON from response.");
+          console.error("[AI Parse Error] Failed to parse JSON from response.", parseError);
           if (attempt === maxAttempts) throw new Error("AI returned invalid JSON format.");
         }
 

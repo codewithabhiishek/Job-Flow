@@ -119,6 +119,15 @@ app.post('/api/ai/invoke', async (req, res) => {
   }
 });
 
+// Global error handler to catch all Express errors (e.g. from clerkMiddleware) and return JSON
+app.use((err, req, res, next) => {
+  console.error('[Express Global Error]', err);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal Server Error'
+  });
+});
+
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {

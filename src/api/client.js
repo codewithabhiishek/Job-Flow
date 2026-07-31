@@ -27,11 +27,17 @@ class ApiClient {
         ...options.headers,
       },
     });
+
+    const rawText = await response.text();
+    console.log(`[API Response] Status: ${response.status}`);
+    console.log(`[API Response] Content-Type: ${response.headers.get('content-type')}`);
+    console.log(`[API Response] Raw text (first 500 chars):`, rawText.substring(0, 500));
+
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || response.statusText);
+      throw new Error(rawText || response.statusText);
     }
-    return response.json();
+    
+    return JSON.parse(rawText);
   }
 }
 
