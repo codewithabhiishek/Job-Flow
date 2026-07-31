@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Loader2 } from "lucide-react";
 import { apiClient } from "@/api/client";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { STATUS_ORDER } from "@/components/StatusBadge";
 import {
   Select,
@@ -35,8 +36,42 @@ const EMPTY_JOB = {
 };
 
 export default function ReviewJobModal({ open, onOpenChange, extractedData, onSaved }) {
+  const queryClient = useQueryClient();
   const [data, setData] = useState(EMPTY_JOB);
   const [loading, setLoading] = useState(false);
+
+  const createMutation = useMutation({
+    mutationFn: async (jobData) => {
+      return apiClient.fetchApi('/jobs', {
+        method: "POST",
+        body: JSON.stringify(jobData),
+      });
+    },
+    onMutate: async (newJob) => {
+      await queryClient.cancelQueries({ queryKey: ['jobs'] });
+      const previousJobs = queryClient.getQueryData(['jobs']);
+      queryClient.setQueryData(['jobs'], (old) => {
+        // Optimistic append - give it a temporary ID so it renders instantly
+        const optimisticJob = { ...newJob, id: `temp-${Date.now()}`, created_date: new Date().toISOString() };
+        return old ? [optimisticJob, ...old] : [optimisticJob];
+      });
+      return { previousJobs };
+    },
+    onError: (err, newJob, context) => {
+      queryClient.setQueryData(['jobs'], context.previousJobs);
+      toast.error("Failed to save job", { description: err.message });
+      setLoading(false);
+    },
+    onSuccess: () => {
+      toast.success("Job added successfully");
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      handleClose(false);
+      if (onSaved) onSaved();
+    },
+    onSettled: () => {
+      setLoading(false);
+    }
+  });
 
   // Load the initial extracted data when the modal opens
   useEffect(() => {
@@ -73,22 +108,10 @@ export default function ReviewJobModal({ open, onOpenChange, extractedData, onSa
       return;
     }
     setLoading(true);
-    try {
-      await apiClient.fetchApi('/jobs', {
-        method: "POST",
-        body: JSON.stringify({
-          ...data,
-          skills: Array.isArray(data.skills) ? data.skills : [],
-        }),
-      });
-      toast.success("Job added successfully");
-      handleClose(false);
-      if (onSaved) onSaved();
-    } catch (err) {
-      toast.error("Failed to save job", { description: err.message });
-    } finally {
-      setLoading(false);
-    }
+    createMutation.mutate({
+      ...data,
+      skills: Array.isArray(data.skills) ? data.skills : [],
+    });
   };
 
   return (
