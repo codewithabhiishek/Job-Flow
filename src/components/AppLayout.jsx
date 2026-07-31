@@ -1,16 +1,22 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import AddJobDialog from "./AddJobDialog";
 import { AnimatePresence, motion } from "framer-motion";
 
+import UploadScreenshotModal from "./modals/UploadScreenshotModal";
+import PasteUrlModal from "./modals/PasteUrlModal";
+import PasteDescriptionModal from "./modals/PasteDescriptionModal";
+import ReviewJobModal from "./modals/ReviewJobModal";
+
 export default function AppLayout() {
-  const [addJobOpen, setAddJobOpen] = useState(false);
+  const [activeModal, setActiveModal] = useState(null); // 'screenshot', 'url', 'text', 'review'
+  const [extractedData, setExtractedData] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -28,8 +34,13 @@ export default function AppLayout() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const openAddJob = (tab) => {
-    setAddJobOpen(true);
+  const openAddJob = (tab = 'screenshot') => {
+    setActiveModal(tab);
+  };
+
+  const handleExtraction = (data) => {
+    setExtractedData(data);
+    setActiveModal('review');
   };
 
   return (
@@ -84,7 +95,38 @@ export default function AppLayout() {
           </AnimatePresence>
         </main>
       </div>
-      <AddJobDialog open={addJobOpen} onOpenChange={setAddJobOpen} />
+
+      <UploadScreenshotModal 
+        open={activeModal === 'screenshot'} 
+        onOpenChange={(open) => !open && setActiveModal(null)} 
+        onExtract={handleExtraction} 
+      />
+      
+      <PasteUrlModal 
+        open={activeModal === 'url'} 
+        onOpenChange={(open) => !open && setActiveModal(null)} 
+        onExtract={handleExtraction} 
+      />
+      
+      <PasteDescriptionModal 
+        open={activeModal === 'text'} 
+        onOpenChange={(open) => !open && setActiveModal(null)} 
+        onExtract={handleExtraction} 
+      />
+
+      <ReviewJobModal 
+        open={activeModal === 'review'} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setActiveModal(null);
+            setExtractedData(null);
+          }
+        }} 
+        extractedData={extractedData} 
+        onSaved={() => {
+          navigate("/jobs"); // Redirect to jobs table upon successful save
+        }}
+      />
     </div>
   );
 }

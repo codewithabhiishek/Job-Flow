@@ -67,19 +67,34 @@ app.delete('/api/jobs/:id', async (req, res) => {
   }
 });
 
+import * as cheerio from 'cheerio';
+
 app.post('/api/ai/invoke', async (req, res) => {
   try {
-    const { prompt } = req.body;
-    const result = await aiProvider.invokeLLM(prompt, "job posting");
+    const { method, payload } = req.body;
+    let result;
+
+    if (method === "url") {
+      const response = await fetch(payload);
+      if (!response.ok) throw new Error("Failed to fetch job URL");
+      const html = await response.text();
+      const $ = cheerio.load(html);
+      $('script, style, noscript, iframe, img, svg, head').remove();
+      const text = $('body').text().replace(/\s+/g, ' ').trim();
+      result = await aiProvider.invokeLLM(text, "url");
+    } else if (method === "screenshot") {
+      // payload is base64 string
+      result = await aiProvider.invokeLLM(payload, "screenshot");
+    } else if (method === "text") {
+      result = await aiProvider.invokeLLM(payload, "text");
+    } else {
+      throw new Error("Invalid extraction method");
+    }
+    
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
-
-app.post('/api/upload', async (req, res) => {
-  // Placeholder for real file upload. In production, stream to S3/Cloudinary.
-  res.json({ file_url: 'https://example.com/dummy.png' });
 });
 
 if (process.env.NODE_ENV !== 'production') {

@@ -7,10 +7,10 @@ export class AIProvider {
     this.apiKey = process.env.MINIMAX_API_KEY || ''; 
   }
 
-  async invokeLLM(prompt, type) {
+  async invokeLLM(payload, type) {
     console.log("Invoking MiniMax via NVIDIA with type:", type);
     
-    let systemMessage = `You are an expert AI recruiter assistant. Extract the job details from the provided text into a strict JSON object. 
+    let systemMessage = `You are an expert AI recruiter assistant. Extract the job details from the provided text or image into a strict JSON object. 
 If the text does not contain a specific field, leave it null. Do not hallucinate.
 
 Required JSON format:
@@ -18,16 +18,37 @@ Required JSON format:
   "company": "Company Name",
   "job_title": "Role Name",
   "location": "Location Name (City, State/Country or Remote)",
-  "salary": "Salary string exactly as it appears or formatted (e.g. ₹24 LPA)",
+  "salary": "Salary string exactly as it appears or formatted",
+  "employment_type": "Full-time, Part-time, Contract, etc.",
+  "experience": "Junior, Mid-level, Senior, or specific years",
+  "remote": true or false,
+  "job_url": "URL if available",
+  "deadline": "YYYY-MM-DD or string",
   "skills": ["Skill 1", "Skill 2"]
 }`;
 
-    const payload = {
-      model: "minimaxai/minimax-m3",
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: `Extract details from this ${type}: \n\n${prompt}` }
-      ],
+    const messages = [
+      { role: "system", content: systemMessage }
+    ];
+
+    if (type === "screenshot") {
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: "Extract details from this job posting screenshot." },
+          { type: "image_url", image_url: { url: payload } }
+        ]
+      });
+    } else {
+      messages.push({
+        role: "user",
+        content: `Extract details from this job posting: \n\n${payload}`
+      });
+    }
+
+    const requestPayload = {
+      model: type === "screenshot" ? "meta/llama-3.2-90b-vision-instruct" : "minimaxai/minimax-m3",
+      messages: messages,
       temperature: 0.1,
       top_p: 0.95,
       max_tokens: 1024,
@@ -41,7 +62,7 @@ Required JSON format:
           "Authorization": `Bearer ${this.apiKey}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(requestPayload)
       });
 
       if (!response.ok) {
