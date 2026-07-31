@@ -32,9 +32,21 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
       )}
     >
       {/* Logo */}
-      <div className={cn("h-14 flex items-center border-b border-border", isCollapsed ? "justify-center px-0" : "px-4")}>
-        {isCollapsed ? <Logo size="sm" iconOnly /> : <Logo size="sm" />}
-      </div>
+      <Link 
+        to="/dashboard"
+        className={cn(
+          "h-14 flex items-center border-b border-border transition-colors duration-300 group hover:bg-muted/30 cursor-pointer",
+          isCollapsed ? "justify-center px-0" : "px-5"
+        )}
+      >
+        <div className="flex items-center transition-transform duration-300 ease-out group-hover:scale-[1.04]">
+          <Logo 
+            size="md" 
+            iconOnly={isCollapsed} 
+            className="text-foreground/90 group-hover:text-foreground group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.2)] transition-all duration-300 gap-2.5"
+          />
+        </div>
+      </Link>
 
       {/* Navigation */}
       <nav className={cn("flex-1 py-3 space-y-0.5", isCollapsed ? "px-2" : "px-2")}>

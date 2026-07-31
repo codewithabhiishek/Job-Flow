@@ -41,7 +41,7 @@ export default function Logo({ className, iconOnly = false, size = "md" }) {
         </svg>
       </div>
       {!iconOnly && (
-        <span className={cn("font-semibold tracking-tight text-foreground", textClasses[size])}>
+        <span className={cn("font-bold tracking-tight text-foreground leading-none flex items-center", textClasses[size])}>
           JobFlow
         </span>
       )}
