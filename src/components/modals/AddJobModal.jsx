@@ -118,46 +118,54 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
       <DialogContent className="max-w-xl bg-popover border-border text-popover-foreground flex flex-col gap-0 p-0 overflow-hidden">
         
         {/* Header & Tabs */}
-        <div className="p-6 pb-4 border-b border-border/50 bg-muted/20">
+        <div className="p-6 pb-6 border-b border-border/50 bg-muted/10">
           <DialogHeader>
-            <DialogTitle className="text-foreground text-[18px] font-semibold mb-4">
+            <DialogTitle className="text-foreground text-[18px] font-semibold mb-6">
               Add New Job
             </DialogTitle>
           </DialogHeader>
 
           {/* Segmented Control */}
-          <div className="flex p-1 space-x-1 bg-muted/50 rounded-xl border border-border/50">
+          <div className="flex p-1.5 space-x-1 bg-muted/40 rounded-[14px] border border-border/40">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
-                <button
+                <motion.button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
+                  whileHover={{ scale: 1.01, backgroundColor: isActive ? "" : "rgba(255,255,255,0.03)" }}
+                  whileTap={{ scale: 0.98 }}
                   className={cn(
-                    "flex-1 relative flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all duration-200",
-                    isActive ? "text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    "flex-1 relative flex items-center justify-center gap-2.5 py-2.5 rounded-[10px] transition-colors duration-200 outline-none cursor-pointer",
+                    isActive ? "text-foreground font-semibold" : "text-muted-foreground font-normal hover:text-foreground/90"
                   )}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="activeTabIndicator"
-                      className="absolute inset-0 bg-background rounded-lg shadow-sm border border-border/50"
-                      transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                      className="absolute inset-0 bg-popover rounded-[10px] shadow-sm border border-border/60"
+                      transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
                     />
                   )}
                   <span className="relative z-10 flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
+                    <Icon 
+                      className={cn(
+                        "w-[18px] h-[18px] transition-colors duration-200", 
+                        isActive ? "text-foreground" : "text-muted-foreground/80"
+                      )} 
+                      strokeWidth={isActive ? 2.5 : 2} 
+                    />
+                    <span className="text-[14px] leading-none">{tab.label}</span>
                   </span>
-                </button>
+                </motion.button>
               );
             })}
           </div>
         </div>
 
         {/* Dynamic Content Area (Fixed Height to prevent jumping) */}
-        <div className="p-6 flex-1 min-h-[280px] relative">
+        <div className="px-8 py-6 flex-1 min-h-[280px] relative flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -165,29 +173,29 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
               transition={{ duration: 0.15 }}
-              className="h-full flex flex-col"
+              className="h-full flex-1 flex flex-col justify-center"
             >
               {activeTab === "screenshot" && (
                 <div className="flex-1 flex flex-col justify-center">
-                  <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-border rounded-xl py-14 cursor-pointer hover:border-muted-foreground/40 hover:bg-muted/30 transition-colors">
+                  <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-border rounded-[14px] py-16 cursor-pointer hover:border-muted-foreground/40 hover:bg-muted/30 transition-colors">
                     {file ? (
                       <>
-                        <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                          <Check className="w-6 h-6 text-emerald-500" />
+                        <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                          <Check className="w-7 h-7 text-emerald-500" />
                         </div>
-                        <div className="text-center">
-                          <p className="text-[14px] text-foreground font-medium">{file.name}</p>
-                          <p className="text-[12px] text-muted-foreground/60">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <div className="text-center mt-2">
+                          <p className="text-[15px] text-foreground font-semibold">{file.name}</p>
+                          <p className="text-[13px] text-muted-foreground/80 mt-0.5">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                         </div>
                       </>
                     ) : (
                       <>
-                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                          <Upload className="w-5 h-5 text-muted-foreground" />
+                        <div className="w-14 h-14 rounded-full bg-muted/60 flex items-center justify-center">
+                          <Upload className="w-6 h-6 text-muted-foreground/80" />
                         </div>
-                        <div className="text-center">
-                          <p className="text-[14px] font-medium text-foreground">Click or drag to select screenshot</p>
-                          <p className="text-[12px] text-muted-foreground/60 mt-1">Supports PNG, JPG, WEBP</p>
+                        <div className="text-center mt-2">
+                          <p className="text-[15px] font-semibold text-foreground">Click or drag to select screenshot</p>
+                          <p className="text-[13px] text-muted-foreground/70 mt-1">Supports PNG, JPG, WEBP</p>
                         </div>
                       </>
                     )}
@@ -202,30 +210,30 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
               )}
 
               {activeTab === "url" && (
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="text-sm font-medium text-foreground">Job Posting URL</label>
+                <div className="flex-1 flex flex-col justify-center gap-3">
+                  <label className="text-[15px] font-semibold text-foreground">Job Posting URL</label>
                   <input
                     type="url"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://www.linkedin.com/jobs/view/..."
-                    className="w-full h-12 px-4 rounded-xl bg-muted/50 border border-border text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-shadow"
+                    className="w-full h-[52px] px-5 rounded-[12px] bg-muted/30 border border-border text-[15px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-shadow"
                     autoFocus
                   />
-                  <p className="text-xs text-muted-foreground/80 mt-2">
+                  <p className="text-[13px] text-muted-foreground/80 mt-1 leading-relaxed">
                     Works best with LinkedIn, Indeed, Greenhouse, Lever, and standard company careers pages.
                   </p>
                 </div>
               )}
 
               {activeTab === "text" && (
-                <div className="flex-1 flex flex-col gap-2 h-full">
-                  <label className="text-sm font-medium text-foreground">Raw Job Description</label>
+                <div className="flex-1 flex flex-col gap-3 h-full justify-center">
+                  <label className="text-[15px] font-semibold text-foreground">Raw Job Description</label>
                   <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder="Copy and paste the entire job description here..."
-                    className="w-full flex-1 min-h-[200px] p-4 rounded-xl bg-muted/50 border border-border text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring resize-none transition-shadow leading-relaxed"
+                    className="w-full flex-1 min-h-[180px] p-5 rounded-[12px] bg-muted/30 border border-border text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring resize-none transition-shadow leading-relaxed"
                     autoFocus
                   />
                 </div>
@@ -235,11 +243,11 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
         </div>
 
         {/* Footer */}
-        <div className="p-6 pt-4 border-t border-border/50 bg-muted/10">
+        <div className="p-8 pt-4 border-t border-border/50 bg-muted/10">
           <Button 
             onClick={handleExtract} 
             disabled={!canExtract() || loading} 
-            className="w-full h-12 text-[15px] shadow-sm"
+            className="w-full h-[52px] text-[15px] font-semibold shadow-sm rounded-[12px]"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2" />}
             {buttonText()}
