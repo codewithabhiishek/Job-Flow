@@ -10,7 +10,7 @@ export const jobs = pgTable('jobs', {
   employment_type: text('employment_type'),
   experience: text('experience'),
   remote: boolean('remote').default(false),
-  skills: jsonb('skills').$type<string[]>(),
+  skills: jsonb('skills'),
   job_url: text('job_url'),
   deadline: text('deadline'), // or timestamp, based on string format
   notes: text('notes'),
