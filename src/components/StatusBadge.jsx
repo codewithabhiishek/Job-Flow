@@ -35,14 +35,16 @@ export default function StatusBadge({ status, onClick, showChevron = false }) {
     <div
       onClick={onClick}
       className={cn(
-        "relative flex items-center justify-between w-[100px] h-[24px] px-2.5 rounded-[6px] border text-[11.5px] font-medium tracking-[0.01em] transition-colors duration-200",
+        // Fixed dimensions — never let content or status change shift the layout
+        "inline-flex items-center justify-between w-[96px] h-[22px] px-2 rounded-[5px] border",
+        "text-[11px] font-semibold tracking-[0.01em] transition-colors duration-150 shrink-0",
         config.className,
-        onClick ? "hover:brightness-110 cursor-pointer" : ""
+        onClick ? "hover:brightness-110 cursor-pointer" : "",
       )}
     >
       <span className="flex-1 text-center truncate">{config.label}</span>
       {showChevron && (
-        <ChevronDown className="w-3.5 h-3.5 opacity-50 shrink-0 ml-1" strokeWidth={2.5} />
+        <ChevronDown className="w-3 h-3 opacity-40 shrink-0 ml-0.5" strokeWidth={2.5} />
       )}
     </div>
   );
