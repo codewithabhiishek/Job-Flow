@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import dns from 'dns/promises';
 
 export class UrlExtractor {
   
@@ -103,7 +104,7 @@ export class UrlExtractor {
   }
 
   async extract(urlStr) {
-    // 1. Basic validation
+    // 1. Basic validation and SSRF Prevention
     let u;
     try {
       u = new URL(urlStr);
@@ -111,6 +112,26 @@ export class UrlExtractor {
       throw new Error("Invalid URL provided.");
     }
     
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      throw new Error("Invalid URL protocol. Only HTTP and HTTPS are allowed.");
+    }
+    
+    if (u.hostname === 'localhost') {
+      throw new Error("Access to localhost is forbidden.");
+    }
+    
+    try {
+      const addresses = await dns.resolve(u.hostname);
+      for (const ip of addresses) {
+        if (/^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|169\.254\.|0\.0\.0\.0)/.test(ip) || ip === '::1' || ip === '0:0:0:0:0:0:0:1') {
+          throw new Error("Access to private or internal network addresses is forbidden.");
+        }
+      }
+    } catch (err) {
+      if (err.message.includes("forbidden")) throw err;
+      throw new Error("Failed to resolve hostname or invalid domain.");
+    }
+
     const isATS = this.isKnownATS(urlStr);
     
     // We fetch the page
