@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 dotenv.config();
 
 import { db } from './db.js';
@@ -11,10 +12,13 @@ import { clerkMiddleware, requireAuth } from '@clerk/express';
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Clerk auth middleware
-app.use(clerkMiddleware());
+app.use(clerkMiddleware({
+  publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
+  secretKey: process.env.CLERK_SECRET_KEY
+}));
 
 // All API routes are protected
 app.use('/api', requireAuth());
