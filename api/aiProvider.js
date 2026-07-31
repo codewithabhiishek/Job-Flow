@@ -12,21 +12,43 @@ export class AIProvider {
     const visionModel = process.env.VISION_MODEL || "meta/llama-3.2-11b-vision-instruct";
     const model = type === "screenshot" ? visionModel : textModel;
     
-    let systemMessage = `You are an expert AI recruiter assistant. Extract the job details from the provided text or image into a strict JSON object. 
-If the text does not contain a specific field, leave it null. Do not hallucinate.
+    let systemMessage = `You are an expert AI recruiter assistant. Extract job details from the provided text or image into a strict JSON object.
+CRITICAL RULES:
+1. ONLY extract information explicitly present in the job posting. NEVER infer, guess, hallucinate, or invent values.
+2. If a field is missing, return null or an empty string. Prefer missing data over incorrect data.
+3. Preserve original capitalization and wording whenever possible.
+4. Return valid JSON only. Do not wrap the response in Markdown. Do not include explanations or extra text.
+
+Extraction rules for fields:
+- company: Extract the exact company name only. Do not shorten or modify it.
+- job_title: Extract exactly as written. Preserve seniority (Intern, Junior, Senior, Lead, etc.).
+- location: Extract the full location exactly. Do NOT merge work mode into the location string.
+- work_mode: Detect separately (On-site, Hybrid, Remote).
+- salary: Extract only if explicitly mentioned. Preserve currency and range exactly.
+- employment_type: Extract exactly (Internship, Full-time, Part-time, Contract, Temporary, Freelance). Do not guess.
+- experience: ONLY extract years of experience (e.g. "2+ years"). NEVER treat education requirements as experience.
+- education: Extract separately (e.g. "Bachelor's degree", "Master's degree").
+- skills: Extract ONLY technical skills explicitly mentioned. Do NOT invent related technologies.
+- deadline: Extract only if explicitly present. Preserve the actual date.
+- job_url: Preserve the original URL exactly.
+- benefits: Extract only explicitly listed benefits.
+- notes: Leave empty. Do not generate summaries.
 
 Required JSON format:
 {
   "company": "Company Name",
   "job_title": "Role Name",
-  "location": "Location Name (City, State/Country or Remote)",
+  "location": "Location Name (City, State/Country)",
+  "work_mode": "On-site, Hybrid, or Remote",
   "salary": "Salary string exactly as it appears or formatted",
   "employment_type": "Full-time, Part-time, Contract, etc.",
   "experience": "Junior, Mid-level, Senior, or specific years",
-  "remote": true or false,
-  "job_url": "URL if available",
+  "education": "Bachelor's degree, etc.",
+  "skills": ["Skill 1", "Skill 2"],
   "deadline": "YYYY-MM-DD or string",
-  "skills": ["Skill 1", "Skill 2"]
+  "job_url": "URL if available",
+  "benefits": ["Benefit 1", "Benefit 2"],
+  "notes": ""
 }`;
 
     const messages = [
@@ -105,7 +127,30 @@ Required JSON format:
           }
           
           const jsonString = content.substring(firstBrace, lastBrace + 1);
-          return JSON.parse(jsonString);
+          const parsed = JSON.parse(jsonString);
+
+          // Post-processing logic to enforce rules
+          const sanitizeStr = (val) => (val && typeof val === 'string' && val.trim().toLowerCase() !== 'none' && val.trim().toLowerCase() !== 'null' ? val.trim() : "");
+          const sanitizeArr = (val) => (Array.isArray(val) ? val.filter(v => v && v.trim().toLowerCase() !== 'none') : []);
+
+          const processed = {
+            company: sanitizeStr(parsed.company),
+            job_title: sanitizeStr(parsed.job_title),
+            location: sanitizeStr(parsed.location),
+            work_mode: sanitizeStr(parsed.work_mode),
+            remote: sanitizeStr(parsed.work_mode).toLowerCase() === 'remote' || parsed.remote === true,
+            salary: sanitizeStr(parsed.salary),
+            employment_type: sanitizeStr(parsed.employment_type),
+            experience: sanitizeStr(parsed.experience),
+            education: sanitizeStr(parsed.education),
+            skills: sanitizeArr(parsed.skills),
+            deadline: sanitizeStr(parsed.deadline),
+            job_url: sanitizeStr(parsed.job_url),
+            benefits: sanitizeArr(parsed.benefits),
+            notes: "" // explicitly empty as per rules
+          };
+
+          return processed;
         } catch (parseError) {
           console.error("[AI Parse Error] Failed to parse JSON from response.", parseError);
           if (attempt === maxAttempts) throw new Error("AI returned invalid JSON format.");

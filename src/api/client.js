@@ -30,11 +30,16 @@ class ApiClient {
 
     const rawText = await response.text();
     console.log(`[API Response] Status: ${response.status}`);
-    console.log(`[API Response] Content-Type: ${response.headers.get('content-type')}`);
+    const contentType = response.headers.get('content-type') || '';
+    console.log(`[API Response] Content-Type: ${contentType}`);
     console.log(`[API Response] Raw text (first 500 chars):`, rawText.substring(0, 500));
 
     if (!response.ok) {
       throw new Error(rawText || response.statusText);
+    }
+    
+    if (contentType.includes('text/html')) {
+      throw new Error(`API returned an HTML page instead of JSON. This usually indicates a routing issue (like hitting a SPA fallback) or a server crash. URL: ${API_URL}${endpoint}`);
     }
     
     return JSON.parse(rawText);

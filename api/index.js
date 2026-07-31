@@ -33,11 +33,40 @@ app.get('/api/jobs', async (req, res) => {
 });
 
 app.post('/api/jobs', async (req, res) => {
+  console.log("---- REQUEST RECEIVED ----");
+  console.log("URL:", req.url, "| Method:", req.method);
+  console.log("Headers:", JSON.stringify(req.headers));
+  console.log("Payload:", JSON.stringify(req.body));
+  console.log("Auth status:", !!req.auth);
+  console.log("User ID:", req.auth?.userId);
+
   try {
-    const newJob = await db.insert(jobs).values({ ...req.body, user_id: req.auth.userId }).returning();
+    // Only extract fields known to the DB schema to prevent Drizzle exceptions
+    const {
+      company, logo, job_title, location, salary, employment_type,
+      experience, remote, skills, job_url, deadline, notes, status,
+      applied_date, reply_date, interview_date, source
+    } = req.body;
+
+    const dbPayload = {
+      company, logo, job_title, location, salary, employment_type,
+      experience, remote: remote || false, skills: skills || [], job_url, deadline, notes, status,
+      applied_date, reply_date, interview_date, source,
+      user_id: req.auth.userId
+    };
+
+    console.log("Validation result (DB payload):", JSON.stringify(dbPayload));
+
+    console.log("Executing DB Query...");
+    const newJob = await db.insert(jobs).values(dbPayload).returning();
+    
+    console.log("DB response (Inserted row):", JSON.stringify(newJob[0]));
+    console.log("Final response status: 200 JSON");
+    
     res.json(newJob[0]);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("DB query failed:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
