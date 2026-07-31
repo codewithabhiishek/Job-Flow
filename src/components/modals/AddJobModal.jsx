@@ -11,12 +11,26 @@ import { apiClient } from "@/api/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const TABS = [
   { id: "screenshot", label: "Screenshot", icon: Camera },
   { id: "url", label: "Job URL", icon: Link2 },
   { id: "text", label: "Description", icon: ClipboardPaste },
 ];
+
+const getPlatformFromUrl = (url) => {
+  if (!url) return null;
+  const l = url.toLowerCase();
+  if (l.includes('linkedin.com')) return 'LinkedIn';
+  if (l.includes('indeed.com')) return 'Indeed';
+  if (l.includes('wellfound.com') || l.includes('angel.co')) return 'Wellfound';
+  if (l.includes('naukri.com')) return 'Naukri';
+  if (l.includes('glassdoor.com')) return 'Glassdoor';
+  if (l.includes('instahyre.com')) return 'Instahyre';
+  if (l.includes('greenhouse.io') || l.includes('lever.co') || l.includes('workday.com') || l.includes('careers.')) return 'Company Website';
+  return 'Company Website';
+};
 
 export default function AddJobModal({ open, defaultTab = "screenshot", onOpenChange, onExtract }) {
   // Always initialise to "screenshot" — never rely on a useEffect to set this
@@ -157,8 +171,18 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
         throw new Error(`${result.stage}: ${result.error}`);
       }
 
-      const extractedPayload = { ...result, source: method };
-      if (method === "url") extractedPayload.job_url = url;
+      const extractedPayload = { ...result };
+      
+      if (method === "url") {
+        extractedPayload.job_url = url;
+        if (!extractedPayload.source) {
+          extractedPayload.source = getPlatformFromUrl(url);
+        }
+      }
+
+      if (!extractedPayload.source) {
+        extractedPayload.source = "Unknown";
+      }
       
       console.log("[DEBUG] Payload prepared for onExtract:", extractedPayload);
       

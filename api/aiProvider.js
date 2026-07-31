@@ -20,13 +20,14 @@ const JOB_JSON_SCHEMA = {
       skills:          { type: "array", items: { type: "string" } },
       deadline:        { type: "string" },
       job_url:         { type: "string" },
+      source:          { type: "string" },
       benefits:        { type: "array", items: { type: "string" } },
       notes:           { type: "string" }
     },
     required: [
       "company", "job_title", "location", "work_mode",
       "salary", "employment_type", "experience", "education",
-      "skills", "deadline", "job_url", "benefits", "notes"
+      "skills", "deadline", "job_url", "source", "benefits", "notes"
     ],
     additionalProperties: false
   }
@@ -53,6 +54,7 @@ Field extraction rules:
 - skills: Only explicit technical skills. Do NOT invent related technologies.
 - deadline: Application deadline date if explicitly stated, else "".
 - job_url: Leave "" unless a URL is visible in the content.
+- source: The platform name where the job is posted (e.g. "LinkedIn", "Indeed", "Wellfound", "Naukri", "Glassdoor", "Company Website"). Leave "" if unknown.
 - benefits: Only explicitly listed benefits (health, equity, etc.).
 - notes: Always "".`;
 

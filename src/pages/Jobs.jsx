@@ -9,6 +9,7 @@ import {
   Search, ChevronDown, ChevronUp, Clock, GripVertical, Image as ImageIcon, MapPin, Building2, MoreVertical, Edit2, AlertCircle, FileText
 } from "lucide-react";
 import StatusBadge, { STATUS_ORDER, STATUS_CONFIG } from "@/components/StatusBadge";
+import SourceBadge from "@/components/SourceBadge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger,
 } from "@/components/ui/select";
@@ -28,36 +29,16 @@ import { toast } from "sonner";
 // ─── Columns: exactly 6 data + 1 actions ─────────────────────────────────────
 // Fixed pixel widths so nothing shifts regardless of content length
 const COLS = [
-  { key: "company",   label: "Company",  w: "w-[28%]", sort: true,  edit: true  },
+  { key: "company",   label: "Company",  w: "w-[25%]", sort: true,  edit: true  },
   { key: "job_title", label: "Role",     w: "w-[22%]", sort: true,  edit: true  },
-  { key: "location",  label: "Location", w: "w-[17%]", sort: true,  edit: true  },
-  { key: "salary",    label: "Salary",   w: "w-[9%]",  sort: false, edit: true,  align: "right" },
-  { key: "status",    label: "Status",   w: "w-[14%]", sort: true,  edit: false },
-  { key: "source",    label: "Source",   w: "w-[7%]",  sort: false, edit: false },
-  { key: "_actions",  label: "",         w: "w-[3%]",  sort: false, edit: false },
+  { key: "location",  label: "Location", w: "w-[16%]", sort: true,  edit: true  },
+  { key: "salary",    label: "Salary",   w: "w-[10%]", sort: false, edit: true,  align: "right" },
+  { key: "status",    label: "Status",   w: "w-[12%]", sort: true,  edit: false },
+  { key: "source",    label: "Source",   w: "w-[11%]", sort: false, edit: false },
+  { key: "_actions",  label: "",         w: "w-[4%]",  sort: false, edit: false },
 ];
 
 const EDIT_COLS = COLS.filter(c => c.edit).map(c => c.key);
-
-// ─── Source lookup ────────────────────────────────────────────────────────────
-const SOURCES = {
-  linkedin:   { label: "LinkedIn",   cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
-  wellfound:  { label: "Wellfound",  cls: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20" },
-  indeed:     { label: "Indeed",     cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20" },
-  glassdoor:  { label: "Glassdoor",  cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
-  naukri:     { label: "Naukri",     cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
-  referral:   { label: "Referral",   cls: "bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/20" },
-  careers:    { label: "Careers",    cls: "bg-muted/80 text-muted-foreground border-border/60" },
-  unstop:     { label: "Unstop",     cls: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20" },
-  screenshot: { label: "Screenshot", cls: "bg-muted/80 text-muted-foreground border-border/60" },
-  other:      { label: "Other",      cls: "bg-muted/80 text-muted-foreground border-border/60" },
-};
-
-const resolveSource = (src) => {
-  if (!src) return null;
-  const k = src.toLowerCase().trim();
-  return SOURCES[k] ?? { label: src.charAt(0).toUpperCase() + src.slice(1), cls: "bg-muted/80 text-muted-foreground border-border/60" };
-};
 
 // ─── Salary → single condensed token ─────────────────────────────────────────
 const condenseSalary = (raw) => {
@@ -365,7 +346,6 @@ export default function Jobs() {
                 <tbody>
                   {filtered.map(job => {
                     const av  = avatar(job.company);
-                    const src = resolveSource(job.source);
                     const sal = condenseSalary(job.salary);
                     const sel = selectedRow === job.id;
 
@@ -464,7 +444,7 @@ export default function Jobs() {
                               "text-[12.5px] tabular-nums font-medium leading-none",
                               sal ? "text-muted-foreground/75" : "text-muted-foreground/25",
                             )}>
-                              {sal ?? "—"}
+                              {condenseSalary(job.salary) ?? "—"}
                             </span>
                           )}
                         </td>
@@ -486,17 +466,8 @@ export default function Jobs() {
                         </td>
 
                         {/* Source badge */}
-                        <td className="px-4 py-0">
-                          {src ? (
-                            <span className={cn(
-                              "inline-block text-[10px] font-semibold tracking-wide px-1.5 py-0.5 rounded-[4px] border truncate max-w-full leading-tight",
-                              src.cls,
-                            )}>
-                              {src.label}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground/20 text-[12px]">—</span>
-                          )}
+                        <td className="px-4 py-0 text-left">
+                          <SourceBadge source={job.source} />
                         </td>
 
                         {/* Actions */}
@@ -555,7 +526,6 @@ export default function Jobs() {
             <div className="md:hidden divide-y divide-border/40">
               {filtered.map(job => {
                 const av  = avatar(job.company);
-                const src = resolveSource(job.source);
                 const sal = condenseSalary(job.salary);
                 return (
                   <div key={job.id} className="px-4 py-3.5 hover:bg-muted/15 transition-colors cursor-pointer">
@@ -596,7 +566,11 @@ export default function Jobs() {
                         <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
                           {job.location && <span className="text-[11.5px] text-muted-foreground/50">{job.location}</span>}
                           {sal && <span className="text-[11.5px] tabular-nums text-muted-foreground/50">{sal}</span>}
-                          {src && <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded border", src.cls)}>{src.label}</span>}
+                          {job.source && (
+                            <div className="scale-90 origin-left">
+                              <SourceBadge source={job.source} />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
