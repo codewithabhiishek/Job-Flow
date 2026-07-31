@@ -42,9 +42,12 @@ const DeleteJobButton = ({ jobId, jobTitle, onDeleteSuccess }) => {
         <div className="delete-btn-wrapper" onClick={(e) => { e.stopPropagation(); setIsOpen(true); }}>
           <style>{`
             .delete-btn-wrapper {
-              display: inline-flex;
-              transform: scale(0.65);
-              transform-origin: right center;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 140px; /* Reserve max width so it stays centered without jumping */
+              height: 50px;
+              margin: 0 auto;
             }
             .delete-btn-wrapper .button {
               width: 50px;

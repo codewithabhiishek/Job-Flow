@@ -17,13 +17,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import DeleteJobButton from "@/components/DeleteJobButton";
 
 const COLUMNS = [
-  { key: "company", label: "Company", width: "w-[20%]", sortable: true, editable: true },
-  { key: "job_title", label: "Role", width: "w-[20%]", sortable: true, editable: true },
-  { key: "status", label: "Status", width: "w-[15%]", sortable: true, editable: false },
+  { key: "company", label: "Company", width: "w-[18%]", sortable: true, editable: true },
+  { key: "job_title", label: "Role", width: "w-[18%]", sortable: true, editable: true },
+  { key: "status", label: "Status", width: "w-[14%]", sortable: true, editable: false },
   { key: "location", label: "Location", width: "w-[14%]", sortable: true, editable: true },
   { key: "salary", label: "Salary", width: "w-[12%]", sortable: true, align: "right", editable: true },
-  { key: "updated", label: "Last Updated", width: "w-[11%]", sortable: true, align: "right", editable: false },
-  { key: "actions", label: "", width: "w-[8%]", sortable: false, align: "right", editable: false },
+  { key: "updated", label: "Last Updated", width: "w-[12%]", sortable: true, align: "right", editable: false },
+  { key: "actions", label: "Actions", width: "w-[160px]", sortable: false, align: "center", editable: false },
 ];
 
 const EDITABLE_COLS = COLUMNS.filter(c => c.editable).map(c => c.key);
@@ -301,7 +301,7 @@ export default function Jobs() {
         ) : (
           <>
             {/* Desktop View (Table) */}
-            <div className="hidden md:block min-w-[900px]">
+            <div className="hidden md:block min-w-[1050px]">
               <table className="w-full text-left table-fixed" ref={tableRef}>
                 <thead>
                   <tr>
@@ -401,7 +401,7 @@ export default function Jobs() {
 
                           if (col.key === 'actions') {
                             return (
-                              <td key={col.key} className="px-4 py-0 text-right">
+                              <td key={col.key} className="px-4 py-0 text-center">
                                 <DeleteJobButton jobId={job.id} jobTitle={job.company} onDeleteSuccess={removeJob} />
                               </td>
                             );
