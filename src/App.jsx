@@ -40,11 +40,7 @@ import { AuthenticateWithRedirectCallback } from "@clerk/clerk-react";
 const AuthenticatedApp = () => {
   const { user, isLoaded, isDemoMode } = useAuth();
   
-  useEffect(() => {
-    if (user?.id) {
-      apiClient.setUserId(user.id);
-    }
-  }, [user]);
+  // Auth setup is handled inside AuthProvider and apiClient.setToken
 
   return (
     <LoadingScreen isLoaded={isLoaded}>
