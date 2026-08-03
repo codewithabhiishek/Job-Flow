@@ -26,12 +26,13 @@ const EMPTY_JOB = {
   location: "",
   salary: "",
   employment_type: "",
-  experience: "",
+  work_mode: "",
   remote: false,
   skills: [],
   job_url: "",
   deadline: "",
   notes: "",
+  source: "Unknown",
   status: "saved",
 };
 
@@ -107,6 +108,14 @@ export default function ReviewJobModal({ open, onOpenChange, extractedData, onSa
       toast.error("Company name is required");
       return;
     }
+    if (!data.job_title?.trim()) {
+      toast.error("Job title is required");
+      return;
+    }
+    if (data.job_url && !/^https?:\/\/[^\s]+$/i.test(data.job_url)) {
+      toast.error("Enter a valid job URL");
+      return;
+    }
     setLoading(true);
     createMutation.mutate({
       ...data,
@@ -131,7 +140,8 @@ export default function ReviewJobModal({ open, onOpenChange, extractedData, onSa
             <Field label="Location" value={data.location} onChange={(v) => update("location", v)} />
             <Field label="Salary" value={data.salary} onChange={(v) => update("salary", v)} />
             <Field label="Employment Type" value={data.employment_type} onChange={(v) => update("employment_type", v)} />
-            <Field label="Experience" value={data.experience} onChange={(v) => update("experience", v)} />
+            <Field label="Work mode" value={data.work_mode} onChange={(v) => update("work_mode", v)} />
+            <Field label="Source" value={data.source} onChange={(v) => update("source", v)} />
             <Field label="Job URL" value={data.job_url} onChange={(v) => update("job_url", v)} />
             <Field label="Deadline" value={data.deadline} onChange={(v) => update("deadline", v)} type="date" />
           </div>

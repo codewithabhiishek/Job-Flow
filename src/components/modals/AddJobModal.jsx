@@ -18,23 +18,6 @@ const TABS = [
   { id: "text", label: "Description", icon: ClipboardPaste },
 ];
 
-const getPlatformFromUrl = (url) => {
-  if (!url) return null;
-  const l = url.toLowerCase();
-  if (l.includes('linkedin.com')) return 'LinkedIn';
-  if (l.includes('naukri.com')) return 'Naukri';
-  if (l.includes('indeed.com')) return 'Indeed';
-  if (l.includes('wellfound.com') || l.includes('angel.co')) return 'Wellfound';
-  if (l.includes('careers.google.com')) return 'Google Careers';
-  if (l.includes('amazon.jobs')) return 'Amazon Jobs';
-  if (l.includes('jobs.lever.co') || l.includes('lever.co')) return 'Lever';
-  if (l.includes('greenhouse.io')) return 'Greenhouse';
-  if (l.includes('workday.com')) return 'Workday';
-  if (l.includes('glassdoor.com')) return 'Glassdoor';
-  if (l.includes('instahyre.com')) return 'Instahyre';
-  return 'Company Website';
-};
-
 export default function AddJobModal({ open, defaultTab = "screenshot", onOpenChange, onExtract }) {
   // Always initialise to "screenshot" — never rely on a useEffect to set this
   // after the first render, which causes the dropzone to flash invisible.
@@ -180,15 +163,7 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
         extractedPayload.job_url = url;
       }
 
-      // If the AI didn't provide a source, try to detect it from the job_url
-      if (!extractedPayload.source && extractedPayload.job_url) {
-        extractedPayload.source = getPlatformFromUrl(extractedPayload.job_url);
-      }
-
-      if (!extractedPayload.source) {
-        extractedPayload.source = "Unknown";
-      }
-      
+      // The API applies canonical source detection and normalization to every input type.
       console.log("[DEBUG] Payload prepared for onExtract:", extractedPayload);
       
       // Pass data to AppLayout to open ReviewJobModal

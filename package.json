@@ -7,6 +7,7 @@
     "dev": "concurrently \"vite\" \"node api/index.js\"",
     "build": "vite build",
     "lint": "eslint . --quiet",
+    "test:extraction": "node api/jobExtraction.test.js",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview"

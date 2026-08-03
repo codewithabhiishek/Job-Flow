@@ -13,6 +13,7 @@ import { db } from './db.js';
 import { jobs } from './schema.js';
 import { eq, desc } from 'drizzle-orm';
 import { aiProvider } from './aiProvider.js';
+import { normalizeUrl } from './jobExtraction.js';
 import { clerkMiddleware, requireAuth, getAuth } from '@clerk/express';
 
 const app = express();
@@ -57,12 +58,13 @@ app.use('/api', requireAuth());
 
 // Validation Schemas
 const jobSchema = z.object({
-  company: z.string().max(255),
+  company: z.string().trim().min(1).max(255),
   logo: z.string().max(1000).optional().or(z.literal('')),
-  job_title: z.string().max(255).optional().or(z.literal('')),
+  job_title: z.string().trim().min(1).max(255),
   location: z.string().max(255).optional().or(z.literal('')),
   salary: z.string().max(100).optional().or(z.literal('')),
   employment_type: z.string().max(100).optional().or(z.literal('')),
+  work_mode: z.enum(['Remote', 'Hybrid', 'On-site']).optional().or(z.literal('')),
   experience: z.string().max(100).optional().or(z.literal('')),
   remote: z.boolean().optional(),
   skills: z.array(z.string().max(100)).max(50).optional(),
@@ -106,10 +108,14 @@ app.post('/api/jobs', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid input', details: validation.error.errors });
     }
 
+    if (validation.data.job_url && !normalizeUrl(validation.data.job_url)) {
+      return res.status(400).json({ success: false, error: 'Job URL must be a valid HTTP or HTTPS URL.' });
+    }
+    const { work_mode, ...storedFields } = validation.data;
     const rawPayload = {
-      ...validation.data,
-      remote: validation.data.remote || false,
-      skills: validation.data.skills || [],
+      ...storedFields,
+      remote: work_mode === 'Remote' || storedFields.remote || false,
+      skills: storedFields.skills || [],
       user_id: userId
     };
 
@@ -148,7 +154,8 @@ app.put('/api/jobs/:id', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid input', details: validation.error.errors });
     }
 
-    const rawPayload = { ...validation.data };
+    const { work_mode, ...rawPayload } = validation.data;
+    if (work_mode !== undefined) rawPayload.remote = work_mode === 'Remote';
 
     // Auto-resolve logo if company or URL changes, and logo is either empty or we want to try again
     if (
@@ -219,7 +226,7 @@ app.post('/api/ai/invoke', aiLimiter, async (req, res) => {
     if (method === "url") {
       try {
         const cleanPayload = await urlExtractor.extract(payload);
-        result = await aiProvider.invokeLLM(cleanPayload, "url");
+        result = await aiProvider.invokeLLM(cleanPayload, "url", { url: payload, text: cleanPayload });
       } catch (fetchErr) {
         // If the extractor rejects it as non-job, return exactly as requested
         if (fetchErr.message === "This URL is not an individual job posting.") {
@@ -236,9 +243,9 @@ app.post('/api/ai/invoke', aiLimiter, async (req, res) => {
         });
       }
     } else if (method === "screenshot") {
-      result = await aiProvider.invokeLLM(payload, "screenshot");
+        result = await aiProvider.invokeLLM(payload, "screenshot");
     } else if (method === "text") {
-      result = await aiProvider.invokeLLM(payload, "text");
+        result = await aiProvider.invokeLLM(payload, "text", { text: payload });
     } else {
       return res.json({
         success: false,
