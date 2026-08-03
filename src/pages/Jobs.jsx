@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOutletContext } from "react-router-dom";
 import { apiClient } from "@/api/client";
@@ -12,18 +12,6 @@ import {
   Trash2,
   Copy,
   ExternalLink,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  GripVertical,
-  Image as ImageIcon,
-  MapPin,
-  Building2,
-  MoreVertical,
-  Edit2,
-  AlertCircle,
-  FileText,
   Inbox,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -243,9 +231,9 @@ export default function Jobs() {
     onError: () => toast.error("Failed to duplicate"),
   });
 
-  const updateJob = (id, patch) => updateMutation.mutate({ id, patch });
-  const removeJob = (id) => deleteMutation.mutate(id);
-  const duplicateJob = (job) => duplicateMutation.mutate(job);
+  const updateJob = useCallback((id, patch) => updateMutation.mutate({ id, patch }), [updateMutation]);
+  const removeJob = useCallback((id) => deleteMutation.mutate(id), [deleteMutation]);
+  const duplicateJob = useCallback((job) => duplicateMutation.mutate(job), [duplicateMutation]);
 
   // ── Edit ──────────────────────────────────────────────────────────────────────
   const startEdit = (id, col, val) => {
@@ -356,7 +344,7 @@ export default function Jobs() {
   // ── Skeleton ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="px-6 lg:px-8 py-7 w-full flex flex-col h-full">
+      <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-7 w-full flex flex-col h-full" aria-busy="true" aria-label="Loading jobs">
         <div className="mb-5 h-6 w-16">
           <Skeleton className="h-full w-full rounded" />
         </div>
@@ -398,14 +386,17 @@ export default function Jobs() {
 
   return (
     <div
-      className="flex flex-col min-h-full px-6 lg:px-8 py-7 w-full max-w-full"
+      className="flex flex-col min-h-full px-4 sm:px-6 lg:px-8 py-5 sm:py-7 w-full max-w-full"
       onClick={() => setSelectedRow(null)}
     >
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-5 shrink-0">
-        <h1 className="text-[19px] font-semibold tracking-tight text-foreground">
+        <div>
+          <h1 className="text-[20px] font-semibold tracking-tight text-foreground">
           Jobs
-        </h1>
+          </h1>
+          <p className="hidden sm:block mt-1 text-[12px] text-muted-foreground">Keep every opportunity and next step in one calm, focused view.</p>
+        </div>
       </div>
 
       {/* ── Filter chips ───────────────────────────────────────────────────── */}
@@ -434,7 +425,7 @@ export default function Jobs() {
 
       {/* ── Table container ────────────────────────────────────────────────── */}
       <div
-        className="overflow-x-auto rounded-[8px] border border-border/60 bg-card"
+        className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-card"
         onClick={(e) => e.stopPropagation()}
       >
         {filtered.length === 0 ? (
@@ -451,11 +442,11 @@ export default function Jobs() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium text-foreground">
-                No jobs found
+              <p className="text-[14px] font-semibold text-foreground">
+                {searchQuery || statusFilter !== "all" ? "No matching jobs" : "Start tracking your applications"}
               </p>
               <p className="text-[13px] text-muted-foreground mt-1">
-                Try adjusting your filters or add a new job to track.
+                {searchQuery || statusFilter !== "all" ? "Try a different search or filter to find what you need." : "Add a role to see your application pipeline take shape."}
               </p>
             </div>
             <button
@@ -468,7 +459,7 @@ export default function Jobs() {
         ) : (
           <>
             {/* ── Desktop table ─────────────────────────────────────────── */}
-            <div className="hidden md:block min-w-[780px]">
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left table-fixed" ref={tableRef}>
                 {/* thead */}
                 <thead>
@@ -484,7 +475,7 @@ export default function Jobs() {
                         }
                         className={cn(
                           col.w,
-                          "group px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/45 select-none bg-muted/10",
+                          "group px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/55 select-none bg-muted/30",
                           col.align === "right" && "text-right",
                           col.sort &&
                             "cursor-pointer hover:text-muted-foreground/70 transition-colors",
@@ -523,8 +514,8 @@ export default function Jobs() {
               </table>
 
               {/* Row count & Hints footer */}
-              <div className="px-4 py-3 border-t border-border/40 flex items-center justify-between bg-muted/5 rounded-b-[8px]">
-                <div className="flex items-center gap-3 text-[12px] text-muted-foreground/60 font-medium tracking-tight">
+              <div className="px-4 py-3 border-t border-border/40 flex items-center justify-between bg-muted/10 rounded-b-xl">
+                <div className="hidden lg:flex items-center gap-3 text-[12px] text-muted-foreground/60 font-medium tracking-tight">
                   <span className="flex items-center gap-1.5"><Pencil className="w-3 h-3 opacity-70" /> Double-click any cell to edit</span>
                   <span className="opacity-30">•</span>
                   <span>Click company to open job posting</span>
@@ -553,7 +544,16 @@ export default function Jobs() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="px-4 py-3.5 hover:bg-muted/15 transition-colors cursor-pointer"
+                      className="px-4 py-4 hover:bg-muted/25 active:bg-muted/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Open ${job.job_title || "job"} at ${job.company || "company"}`}
+                      onKeyDown={(e) => {
+                        if ((e.key === "Enter" || e.key === " ") && job.job_url) {
+                          e.preventDefault();
+                          window.open(job.job_url, "_blank");
+                        }
+                      }}
                       onClick={(e) => {
                         if (job.job_url) {
                           window.open(job.job_url, "_blank");
@@ -738,7 +738,7 @@ function Chip({ children, active, onClick, count }) {
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11.5px] font-medium transition-colors duration-100 border",
+        "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11.5px] font-medium transition-all duration-150 border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         active
           ? "bg-foreground text-background border-foreground/80"
           : "bg-transparent text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground hover:border-border/80",
@@ -792,14 +792,14 @@ const JobTableRow = memo(
           }
         }}
         className={cn(
-          "group h-10 border-b border-border/35 last:border-0 cursor-pointer select-none",
-          "transition-colors duration-200",
-          sel ? "bg-accent/40" : "hover:bg-muted/30",
+          "group h-[52px] border-b border-border/45 last:border-0 cursor-pointer select-none outline-none",
+          "transition-[background-color,box-shadow] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+          sel ? "bg-primary/[0.045] shadow-[inset_3px_0_0_hsl(var(--primary))]" : "hover:bg-muted/35",
         )}
       >
         {/* Company */}
         <td
-          className="px-3 py-1.5"
+          className="px-4 py-2"
           onDoubleClick={() => startEdit(job.id, "company", job.company)}
         >
           <div className="flex items-center gap-2 min-w-0">
@@ -838,7 +838,7 @@ const JobTableRow = memo(
 
         {/* Role */}
         <td
-          className="px-3 py-1.5"
+          className="px-4 py-2"
           onDoubleClick={() => startEdit(job.id, "job_title", job.job_title)}
         >
           {cellEditing(job.id, "job_title") ? (
@@ -871,7 +871,7 @@ const JobTableRow = memo(
 
         {/* Location */}
         <td
-          className="px-3 py-1.5"
+          className="px-4 py-2"
           onDoubleClick={() => startEdit(job.id, "location", job.location)}
         >
           <EditableText
@@ -887,7 +887,7 @@ const JobTableRow = memo(
 
         {/* Salary */}
         <td
-          className="px-3 py-1.5 text-right"
+          className="px-4 py-2 text-right"
           onDoubleClick={() => startEdit(job.id, "salary", job.salary)}
         >
           <EditableText
@@ -902,7 +902,7 @@ const JobTableRow = memo(
         </td>
 
         {/* Status */}
-        <td className="px-3 py-1.5" onClick={(e) => e.stopPropagation()}>
+        <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
           <Select
             value={job.status}
             onValueChange={(v) => updateJob(job.id, { status: v })}
@@ -921,7 +921,7 @@ const JobTableRow = memo(
         </td>
 
         {/* Source */}
-        <td className="px-3 py-1.5">
+        <td className="px-4 py-2">
           <div className="scale-90 origin-left">
             <SourceBadge source={job.source} />
           </div>
@@ -929,14 +929,14 @@ const JobTableRow = memo(
 
         {/* Actions */}
         <td
-          className="px-3 py-1.5 text-right"
+          className="px-4 py-2 text-right"
           onClick={(e) => e.stopPropagation()}
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Job actions"
-                className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted/80 transition-colors ml-auto"
+                className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ml-auto"
               >
                 <MoreHorizontal className="w-4 h-4" strokeWidth={1.8} />
               </button>

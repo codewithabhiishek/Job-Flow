@@ -37,9 +37,9 @@ export default function StatusBadge({ status, onClick, showChevron = false }) {
       className={cn(
         // Fixed dimensions — never let content or status change shift the layout
         "inline-flex items-center justify-between w-[96px] h-[22px] px-2 rounded-[5px] border",
-        "text-[11px] font-semibold tracking-[0.01em] transition-colors duration-150 shrink-0",
+        "text-[11px] font-semibold tracking-[0.01em] transition-[background-color,color,transform] duration-150 shrink-0",
         config.className,
-        onClick ? "hover:brightness-110 cursor-pointer" : "",
+        onClick ? "hover:brightness-110 hover:scale-[1.02] cursor-pointer" : "",
       )}
     >
       <span className="flex-1 text-center truncate">{config.label}</span>

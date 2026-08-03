@@ -45,7 +45,7 @@ const AuthenticatedApp = () => {
 
   return (
     <LoadingScreen isLoaded={isLoaded}>
-      <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center bg-background"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
+      <Suspense fallback={<RouteSkeleton />}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
@@ -67,6 +67,18 @@ const AuthenticatedApp = () => {
     </LoadingScreen>
   );
 };
+
+function RouteSkeleton() {
+  return (
+    <div className="h-screen w-screen bg-background p-5 sm:p-8" aria-busy="true" aria-label="Loading page">
+      <div className="h-10 w-full max-w-xl animate-pulse rounded-lg bg-muted/70" />
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        {[0, 1, 2].map((item) => <div key={item} className="h-28 animate-pulse rounded-xl bg-muted/50" />)}
+      </div>
+      <div className="mt-6 h-80 w-full animate-pulse rounded-xl bg-muted/40" />
+    </div>
+  );
+}
 
 const AppToaster = () => {
   const { theme } = useTheme();

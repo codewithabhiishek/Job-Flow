@@ -29,6 +29,7 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
       {/* Mobile hamburger */}
       <button
         onClick={onToggleMobileSidebar}
+        aria-label="Open navigation menu"
         className="lg:hidden w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
       >
         <Menu className="w-4 h-4" strokeWidth={1.5} />
@@ -48,7 +49,8 @@ export default function Header({ onAddJob, searchQuery, setSearchQuery, onToggle
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => setIsSearchFocused(false)}
             placeholder="Search..."
-            className="w-full h-8 pl-8 pr-3 rounded-md bg-muted/50 border border-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border focus:bg-background transition-all duration-150"
+            aria-label="Search jobs"
+            className="w-full h-8 pl-8 pr-3 rounded-md bg-muted/50 border border-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-border focus:bg-background transition-all duration-150"
           />
         </div>
       </div>

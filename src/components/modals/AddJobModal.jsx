@@ -11,7 +11,6 @@ import { apiClient } from "@/api/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const TABS = [
   { id: "screenshot", label: "Screenshot", icon: Camera },
