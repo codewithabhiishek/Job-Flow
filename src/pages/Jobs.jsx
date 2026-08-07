@@ -10,7 +10,6 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
-  Copy,
   ExternalLink,
   Inbox,
 } from "lucide-react";
@@ -230,24 +229,8 @@ export default function Jobs() {
     },
   });
 
-  const duplicateMutation = useMutation({
-    mutationFn: (job) => {
-      const { id, created_date, ...rest } = job;
-      return apiClient.fetchApi("/jobs", {
-        method: "POST",
-        body: JSON.stringify({ ...rest, company: `${rest.company} (copy)` }),
-      });
-    },
-    onSuccess: (created) => {
-      queryClient.setQueryData(["jobs"], (old) => [created, ...(old || [])]);
-      toast.success("Duplicated");
-    },
-    onError: () => toast.error("Failed to duplicate"),
-  });
-
   const updateJob = useCallback((id, patch) => updateMutation.mutate({ id, patch }), [updateMutation]);
   const removeJob = useCallback((id) => deleteMutation.mutate(id), [deleteMutation]);
-  const duplicateJob = useCallback((job) => duplicateMutation.mutate(job), [duplicateMutation]);
 
   // ── Edit ──────────────────────────────────────────────────────────────────────
   // These are passed into memo(JobTableRow); keep their identities stable so the
@@ -545,7 +528,6 @@ export default function Jobs() {
                         saveEdit={saveEdit}
                         setSelectedRow={setSelectedRow}
                         updateJob={updateJob}
-                        duplicateJob={duplicateJob}
                         setDeleteTarget={setDeleteTarget}
                         setEditTarget={setEditTarget}
                       />
@@ -662,13 +644,6 @@ export default function Jobs() {
                                   >
                                     <Pencil className="w-3 h-3 opacity-50" />
                                     Edit details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-[12px] gap-2 cursor-pointer"
-                                    onSelect={() => duplicateJob(job)}
-                                  >
-                                    <Copy className="w-3 h-3 opacity-50" />
-                                    Duplicate
                                   </DropdownMenuItem>
                                   {job.job_url && (
                                     <DropdownMenuItem
@@ -808,7 +783,6 @@ const JobTableRow = memo(
     saveEdit,
     setSelectedRow,
     updateJob,
-    duplicateJob,
     setDeleteTarget,
     setEditTarget,
   }) => {
@@ -955,11 +929,6 @@ const JobTableRow = memo(
                 icon={Pencil}
                 label="Edit"
                 onClick={() => setEditTarget(job)}
-              />
-              <RowAction
-                icon={Copy}
-                label="Duplicate"
-                onClick={() => duplicateJob(job)}
               />
               {job.job_url && (
                 <RowAction

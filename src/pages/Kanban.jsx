@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { apiClient } from "@/api/client";
@@ -6,12 +7,15 @@ import { cn, condenseSalary, formatLocation } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { Calendar } from "lucide-react";
+import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import CompanyAvatar from "@/components/CompanyAvatar";
 
 export default function Kanban() {
   const { searchQuery, openAddJob } = useOutletContext();
   const queryClient = useQueryClient();
+  // True only while a card is mid-drag — drives "Drop here" hints on empty columns
+  const [isDragging, setIsDragging] = useState(false);
   const { data: jobs = [], isLoading: loading } = useQuery({
     queryKey: ['jobs'],
     queryFn: () => apiClient.fetchApi('/jobs'),
@@ -43,6 +47,7 @@ export default function Kanban() {
     },
     onError: (err, newTodo, context) => {
       queryClient.setQueryData(['jobs'], context.previousJobs);
+      toast.error("Couldn't move that card — restored to its previous column.");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
@@ -50,6 +55,7 @@ export default function Kanban() {
   });
 
   const onDragEnd = (result) => {
+    setIsDragging(false);
     if (!result.destination) return;
     const sourceStatus = result.source.droppableId;
     const destStatus = result.destination.droppableId;
@@ -91,7 +97,7 @@ export default function Kanban() {
         <p className="hidden sm:block mt-1 text-[12px] text-muted-foreground">Drag cards across stages as your pipeline moves.</p>
       </motion.div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
+      <DragDropContext onDragStart={() => setIsDragging(true)} onDragEnd={onDragEnd}>
         <motion.div variants={itemAnim} className="flex gap-3 overflow-x-auto flex-1 pb-4 snap-x snap-proximity">
           {columns.map((col) => (
             <div key={col.status} className="w-[260px] shrink-0 flex flex-col snap-center max-h-full">
@@ -109,8 +115,12 @@ export default function Kanban() {
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={cn(
-                      "flex-1 min-h-[120px] overflow-y-auto rounded-lg bg-muted/30 border border-border p-2 space-y-2 transition-colors duration-150",
-                      snapshot.isDraggingOver && "bg-muted/60 border-ring/30",
+                      "flex-1 min-h-[120px] overflow-y-auto rounded-lg bg-muted/30 border p-2 space-y-2 transition-colors duration-150",
+                      snapshot.isDraggingOver
+                        ? "bg-muted/60 border-ring/40"
+                        : isDragging
+                          ? "border-dashed border-border"
+                          : "border-border",
                     )}
                   >
                     {col.jobs.map((job, index) => (
@@ -120,11 +130,17 @@ export default function Kanban() {
                             ref={dragProvided.innerRef}
                             {...dragProvided.draggableProps}
                             {...dragProvided.dragHandleProps}
-                            className={cn(
-                              "rounded-md border border-border bg-card p-3 cursor-grab active:cursor-grabbing shadow-card dark:shadow-card-dark hover:shadow-card-hover dark:hover:shadow-card-dark-hover transition-shadow duration-150",
-                              dragSnapshot.isDragging && "shadow-lg border-ring/40 rotate-1",
-                            )}
+                            className="cursor-grab active:cursor-grabbing"
                           >
+                            {/* Inner wrapper owns the visual lift: dnd writes inline
+                                `transform` on the outer element, which would override
+                                Tailwind rotate/scale classes applied there. */}
+                            <div
+                              className={cn(
+                                "rounded-md border border-border bg-card p-3 shadow-card dark:shadow-card-dark hover:shadow-card-hover dark:hover:shadow-card-dark-hover transition-[box-shadow,transform,border-color] duration-150 ease-out",
+                                dragSnapshot.isDragging && "scale-[1.02] rotate-1 shadow-xl border-ring/40",
+                              )}
+                            >
                             <div className="mb-1.5 flex gap-2.5 font-table">
                               <CompanyAvatar company={job.company} logo={job.logo} size={28} />
                               <div className="flex-1 min-w-0">
@@ -160,6 +176,7 @@ export default function Kanban() {
                                 {new Date(job.interview_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </div>
                             )}
+                            </div>
                           </div>
                         )}
                       </Draggable>
@@ -167,7 +184,9 @@ export default function Kanban() {
                     {provided.placeholder}
                     {col.jobs.length === 0 && !snapshot.isDraggingOver && (
                       <div className="h-full flex items-center justify-center text-center py-6">
-                        <span className="text-[12px] text-muted-foreground/60">Drop here</span>
+                        <span className="text-[12px] text-muted-foreground/60">
+                          {isDragging ? "Drop here" : "No jobs"}
+                        </span>
                       </div>
                     )}
                   </div>
