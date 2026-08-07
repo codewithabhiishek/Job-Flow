@@ -1,87 +1,60 @@
-import React from 'react';
+import { Moon, Sun } from "lucide-react";
+import { cn } from "@/lib/utils";
 
+// Theme-aware toggle. `checked === true` means dark is the active theme.
+// The sliding highlight always sits under the currently active theme's icon,
+// so users never have to guess which side means what.
 const ThemeSwitch = ({ checked, onChange }) => {
   return (
-    <>
-      <style>{`
-        .toggle-switch-wrapper {
-          transform: scale(0.55);
-          transform-origin: center;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .toggle-switch {
-          position: relative;
-          width: 100px;
-          height: 50px;
-          --light: #d8dbe0;
-          --dark: #28292c;
-        }
-      
-        .switch-label {
-          position: absolute;
-          width: 100%;
-          height: 50px;
-          background-color: var(--dark);
-          border-radius: 25px;
-          cursor: pointer;
-          border: 3px solid var(--dark);
-          margin: 0;
-        }
-      
-        .switch-checkbox {
-          position: absolute;
-          display: none;
-        }
-      
-        .switch-slider {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          border-radius: 25px;
-          transition: 0.3s;
-          left: 0;
-          top: 0;
-        }
-      
-        .switch-checkbox:checked ~ .switch-slider {
-          background-color: var(--light);
-        }
-      
-        .switch-slider::before {
-          content: "";
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          width: 25px;
-          height: 25px;
-          border-radius: 50%;
-          box-shadow: inset 12px -4px 0 0 var(--light);
-          background-color: var(--dark);
-          transition: 0.3s;
-        }
-      
-        .switch-checkbox:checked ~ .switch-slider::before {
-          transform: translateX(50px);
-          background-color: var(--dark);
-          box-shadow: none;
-        }
-      `}</style>
-      <div className="toggle-switch-wrapper">
-        <div className="toggle-switch">
-          <label className="switch-label">
-            <input
-              type="checkbox"
-              className="switch-checkbox"
-              checked={checked}
-              onChange={onChange}
-            />
-            <span className="switch-slider" />
-          </label>
-        </div>
-      </div>
-    </>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={checked ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={onChange}
+      className={cn(
+        "relative flex items-center w-[76px] h-9 shrink-0 rounded-full p-1 cursor-pointer select-none",
+        "border border-border bg-muted transition-[background-color,border-color,box-shadow] duration-300",
+        "hover:bg-muted/80 hover:border-border/80 hover:shadow-sm",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+      )}
+    >
+      {/* Sliding highlight — slides to the active theme side */}
+      <span
+        aria-hidden
+        className={cn(
+          "absolute top-1 left-1 w-[34px] h-7 rounded-full bg-background border border-border/70 shadow-sm",
+          "flex items-center justify-center transition-transform duration-300 ease-in-out",
+          checked ? "translate-x-[34px]" : "translate-x-0",
+        )}
+      >
+        {checked ? (
+          <Moon className="w-4 h-4 text-primary" strokeWidth={2.2} />
+        ) : (
+          <Sun className="w-4 h-4 text-primary" strokeWidth={2.2} />
+        )}
+      </span>
+
+      {/* Track icons — inactive side is muted, active side sits on the highlight */}
+      <span className="flex-1 flex items-center justify-center">
+        <Sun
+          className={cn(
+            "w-4 h-4 transition-colors duration-300",
+            checked ? "text-muted-foreground/40" : "text-primary",
+          )}
+          strokeWidth={2.2}
+        />
+      </span>
+      <span className="flex-1 flex items-center justify-center">
+        <Moon
+          className={cn(
+            "w-4 h-4 transition-colors duration-300",
+            checked ? "text-primary" : "text-muted-foreground/40",
+          )}
+          strokeWidth={2.2}
+        />
+      </span>
+    </button>
   );
 };
 
