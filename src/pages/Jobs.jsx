@@ -29,6 +29,12 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -51,23 +57,25 @@ import { toast } from "sonner";
 import EditJobModal from "@/components/modals/EditJobModal";
 
 // ─── Columns: exactly 6 data + 1 actions ─────────────────────────────────────
-// Fixed pixel widths so nothing shifts regardless of content length
+// Intentional fixed pixel widths so the layout stays balanced and nothing shifts
+// regardless of content length. Summed width drives the table's min-width.
 const COLS = [
-  { key: "company", label: "Company", w: "w-[25%]", sort: true, edit: true },
-  { key: "job_title", label: "Role", w: "w-[22%]", sort: true, edit: true },
-  { key: "location", label: "Location", w: "w-[16%]", sort: true, edit: true },
+  { key: "company", label: "Company", w: "w-[230px]", sort: true, edit: true },
+  { key: "job_title", label: "Role", w: "w-[210px]", sort: true, edit: true },
+  { key: "location", label: "Location", w: "w-[150px]", sort: true, edit: true },
   {
     key: "salary",
     label: "Salary",
-    w: "w-[10%]",
+    w: "w-[120px]",
     sort: false,
     edit: true,
     align: "right",
   },
-  { key: "status", label: "Status", w: "w-[12%]", sort: true, edit: false },
-  { key: "source", label: "Source", w: "w-[11%]", sort: false, edit: false },
-  { key: "_actions", label: "", w: "w-[4%]", sort: false, edit: false },
+  { key: "status", label: "Status", w: "w-[115px]", sort: true, edit: false },
+  { key: "source", label: "Source", w: "w-[110px]", sort: false, edit: false },
+  { key: "_actions", label: "", w: "w-[150px]", sort: false, edit: false },
 ];
+const TABLE_MIN_W = COLS.reduce((acc, c) => acc + parseInt(c.w.match(/\d+/)?.[0] || 0, 10), 0);
 
 const EDIT_COLS = COLS.filter((c) => c.edit).map((c) => c.key);
 
@@ -132,6 +140,34 @@ function EditableText({
     <span className={cn("truncate block leading-none", textCls)}>
       {value || "—"}
     </span>
+  );
+}
+
+// ─── Row action icon button (revealed on row hover / keyboard focus) ──────────
+function RowAction({ icon: Icon, label, onClick, danger }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          onClick={onClick}
+          className={cn(
+            "w-6 h-6 rounded-md flex items-center justify-center transition-all duration-150",
+            "text-muted-foreground/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100",
+            danger
+              ? "hover:text-destructive hover:bg-destructive/10"
+              : "hover:text-foreground hover:bg-muted/70",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          )}
+        >
+          <Icon className="w-[15px] h-[15px]" strokeWidth={1.9} />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-[11px] px-2 py-1">
+        {label}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -491,7 +527,11 @@ export default function Jobs() {
           <>
             {/* ── Desktop table ─────────────────────────────────────────── */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left table-fixed" ref={tableRef}>
+              <table
+                className="w-full text-left table-fixed"
+                style={{ minWidth: TABLE_MIN_W }}
+                ref={tableRef}
+              >
                 {/* thead */}
                 <thead>
                   <tr className="border-b border-border/60">
@@ -506,7 +546,7 @@ export default function Jobs() {
                         }
                         className={cn(
                           col.w,
-                          "group px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/55 select-none bg-muted/30",
+                          "group px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/55 select-none bg-muted/30 border-r border-border/40 last:border-r-0",
                           col.align === "right" && "text-right",
                           col.sort &&
                             "cursor-pointer hover:text-muted-foreground/70 transition-colors",
@@ -550,9 +590,7 @@ export default function Jobs() {
                 <div className="hidden lg:flex items-center gap-3 text-[12px] text-muted-foreground/60 font-medium tracking-tight">
                   <span className="flex items-center gap-1.5"><Pencil className="w-3 h-3 opacity-70" /> Double-click any cell to edit</span>
                   <span className="opacity-30">•</span>
-                  <span>Click company to open job posting</span>
-                  <span className="opacity-30">•</span>
-                  <span>Use ⋯ for more actions</span>
+                  <span>Hover a row for quick actions</span>
                   <span className="opacity-30">•</span>
                   <span>Press <kbd className="font-sans px-1.5 py-0.5 bg-muted rounded border border-border/50 text-[10px]">Enter</kbd> to edit</span>
                 </div>
@@ -601,22 +639,10 @@ export default function Jobs() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p
-                                className={cn(
-                                  "text-[13px] font-semibold text-foreground truncate leading-snug",
-                                  job.job_url &&
-                                    "hover:underline hover:text-primary transition-colors",
-                                )}
-                              >
+                              <p className="text-[13px] font-semibold text-foreground truncate leading-snug">
                                 {job.company}
                               </p>
-                              <p
-                                className={cn(
-                                  "text-[12px] text-foreground/60 font-medium truncate leading-snug",
-                                  job.job_url &&
-                                    "hover:underline hover:text-primary transition-colors",
-                                )}
-                              >
+                              <p className="text-[12px] text-foreground/60 font-medium truncate leading-snug">
                                 {job.job_title}
                               </p>
                             </div>
@@ -839,18 +865,20 @@ const JobTableRow = memo(
           }
         }}
         className={cn(
-          "group h-[52px] border-b border-border/45 last:border-0 cursor-pointer select-none outline-none",
+          "group align-middle h-[54px] border-b border-border/40 last:border-0 cursor-pointer select-none outline-none",
           "transition-[background-color,box-shadow] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-          sel ? "bg-primary/[0.045] shadow-[inset_3px_0_0_hsl(var(--primary))]" : "hover:bg-muted/35",
+          sel
+            ? "bg-primary/[0.045] shadow-[inset_3px_0_0_hsl(var(--primary))]"
+            : "hover:bg-muted/40",
         )}
       >
         {/* Company */}
         <td
-          className="px-4 py-2"
+          className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "company", job.company)}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <CompanyAvatar company={job.company} logo={job.logo} size={24} />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <CompanyAvatar company={job.company} logo={job.logo} size={26} />
 
             <div className="flex-1 min-w-0">
               {cellEditing(job.id, "company") ? (
@@ -863,19 +891,7 @@ const JobTableRow = memo(
                   className="w-full bg-transparent border-none outline-none p-0 text-[13px] font-semibold text-foreground"
                 />
               ) : (
-                <span
-                  className={cn(
-                    "text-[13px] font-semibold text-foreground truncate block leading-none",
-                    job.job_url &&
-                      "group-hover:underline hover:text-primary cursor-pointer transition-colors",
-                  )}
-                  onClick={(e) => {
-                    if (job.job_url) {
-                      e.stopPropagation();
-                      window.open(job.job_url, "_blank");
-                    }
-                  }}
-                >
+                <span className="text-[13px] font-semibold text-foreground truncate block leading-none">
                   {job.company || "—"}
                 </span>
               )}
@@ -885,7 +901,7 @@ const JobTableRow = memo(
 
         {/* Role */}
         <td
-          className="px-4 py-2"
+          className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "job_title", job.job_title)}
         >
           {cellEditing(job.id, "job_title") ? (
@@ -898,19 +914,7 @@ const JobTableRow = memo(
               className="w-full bg-transparent border-none outline-none p-0 text-[13px] font-medium text-foreground"
             />
           ) : (
-            <span
-              className={cn(
-                "text-[13px] font-medium text-foreground truncate block leading-none",
-                job.job_url &&
-                  "group-hover:underline hover:text-primary cursor-pointer transition-colors",
-              )}
-              onClick={(e) => {
-                if (job.job_url) {
-                  e.stopPropagation();
-                  window.open(job.job_url, "_blank");
-                }
-              }}
-            >
+            <span className="text-[13px] font-medium text-foreground truncate block leading-none">
               {job.job_title || "—"}
             </span>
           )}
@@ -918,7 +922,7 @@ const JobTableRow = memo(
 
         {/* Location */}
         <td
-          className="px-4 py-2"
+          className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "location", job.location)}
         >
           <EditableText
@@ -934,7 +938,7 @@ const JobTableRow = memo(
 
         {/* Salary */}
         <td
-          className="px-4 py-2 text-right"
+          className="px-4 py-2 align-middle text-right border-r border-border/25 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "salary", job.salary)}
         >
           <EditableText
@@ -949,7 +953,10 @@ const JobTableRow = memo(
         </td>
 
         {/* Status */}
-        <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+        <td
+          className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Select
             value={job.status}
             onValueChange={(v) => updateJob(job.id, { status: v })}
@@ -968,67 +975,44 @@ const JobTableRow = memo(
         </td>
 
         {/* Source */}
-        <td className="px-4 py-2">
-          <div className="scale-90 origin-left">
-            <SourceBadge source={job.source} />
-          </div>
+        <td className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0">
+          <SourceBadge source={job.source} />
         </td>
 
-        {/* Actions */}
+        {/* Actions — revealed on row hover / keyboard focus */}
         <td
-          className="px-4 py-2 text-right"
+          className="px-4 py-2 align-middle text-right border-r border-border/25 last:border-r-0"
           onClick={(e) => e.stopPropagation()}
         >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                aria-label="Job actions"
-                className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ml-auto"
-              >
-                <MoreHorizontal className="w-4 h-4" strokeWidth={1.8} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-40 bg-popover border-border"
-            >
-              <DropdownMenuItem
-                className="text-[12px] gap-2 cursor-pointer"
-                onSelect={() => startEdit(job.id, "company", job.company)}
-              >
-                <Pencil className="w-3 h-3 opacity-50" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-[12px] gap-2 cursor-pointer"
-                onSelect={() => setEditTarget(job)}
-              >
-                <Pencil className="w-3 h-3 opacity-50" /> Edit details
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-[12px] gap-2 cursor-pointer"
-                onSelect={() => duplicateJob(job)}
-              >
-                <Copy className="w-3 h-3 opacity-50" /> Duplicate
-              </DropdownMenuItem>
+          <TooltipProvider delayDuration={300}>
+            <div className="flex items-center justify-end gap-0.5">
+              <RowAction
+                icon={Pencil}
+                label="Edit"
+                onClick={() => setEditTarget(job)}
+              />
+              <RowAction
+                icon={Copy}
+                label="Duplicate"
+                onClick={() => duplicateJob(job)}
+              />
               {job.job_url && (
-                <DropdownMenuItem
-                  className="text-[12px] gap-2 cursor-pointer"
-                  onSelect={() => window.open(job.job_url, "_blank")}
-                >
-                  <ExternalLink className="w-3 h-3 opacity-50" /> Open URL
-                </DropdownMenuItem>
+                <RowAction
+                  icon={ExternalLink}
+                  label="Open URL"
+                  onClick={() => window.open(job.job_url, "_blank")}
+                />
               )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-[12px] gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-                onSelect={() =>
+              <RowAction
+                icon={Trash2}
+                label="Delete"
+                danger
+                onClick={() =>
                   setDeleteTarget({ id: job.id, company: job.company })
                 }
-              >
-                <Trash2 className="w-3 h-3" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              />
+            </div>
+          </TooltipProvider>
         </td>
       </motion.tr>
     );
