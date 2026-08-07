@@ -59,20 +59,20 @@ import EditJobModal from "@/components/modals/EditJobModal";
 // Intentional fixed pixel widths so the layout stays balanced and nothing shifts
 // regardless of content length. Summed width drives the table's min-width.
 const COLS = [
-  { key: "company", label: "Company", w: "w-[220px]", sort: true, edit: true },
-  { key: "job_title", label: "Role", w: "w-[240px]", sort: true, edit: true },
-  { key: "location", label: "Location", w: "w-[150px]", sort: true, edit: true },
+  { key: "company", label: "Company", w: "w-[200px]", sort: true, edit: true },
+  { key: "job_title", label: "Role", w: "w-[220px]", sort: true, edit: true },
+  { key: "location", label: "Location", w: "w-[130px]", sort: true, edit: true },
   {
     key: "salary",
     label: "Salary",
-    w: "w-[120px]",
+    w: "w-[110px]",
     sort: false,
     edit: true,
     align: "right",
   },
   { key: "status", label: "Status", w: "w-[115px]", sort: true, edit: false },
-  { key: "source", label: "Source", w: "w-[110px]", sort: false, edit: false },
-  { key: "_actions", label: "", w: "w-[120px]", sort: false, edit: false },
+  { key: "source", label: "Source", w: "w-[100px]", sort: false, edit: false },
+  { key: "_actions", label: "", w: "w-[110px]", sort: false, edit: false },
 ];
 const TABLE_MIN_W = COLS.reduce((acc, c) => acc + parseInt(c.w.match(/\d+/)?.[0] || 0, 10), 0);
 
@@ -105,7 +105,7 @@ function EditableText({
     );
   }
   return (
-    <span className={cn("truncate block leading-none", textCls)} title={title}>
+    <span className={cn("truncate block leading-5", textCls)} title={title}>
       {value || "—"}
     </span>
   );
@@ -477,13 +477,17 @@ export default function Jobs() {
           </motion.div>
         ) : (
           <>
-            {/* ── Desktop table ─────────────────────────────────────────── */}
-            <div className="hidden md:block overflow-x-auto">
-              <table
-                className="w-full text-left table-fixed font-table"
-                style={{ minWidth: TABLE_MIN_W }}
-                ref={tableRef}
-              >
+            {/* ── Desktop / tablet table ──────────────────────────────────
+                Only the table scrolls horizontally on narrow viewports; the
+                footer stays pinned to the container width below it. The outer
+                wrapper owns overflow-hidden so rounded corners survive scroll. */}
+            <div className="hidden md:block">
+              <div className="overflow-x-auto overscroll-x-contain">
+                <table
+                  className="w-full text-left table-fixed font-table"
+                  style={{ minWidth: TABLE_MIN_W }}
+                  ref={tableRef}
+                >
                 {/* thead */}
                 <thead>
                   <tr className="border-b border-border">
@@ -498,7 +502,7 @@ export default function Jobs() {
                         }
                         className={cn(
                           col.w,
-                          "group px-4 py-3 type-table-head select-none bg-muted/60 border-r border-border/50 last:border-r-0",
+                          "group px-3 xl:px-4 py-3 type-table-head select-none bg-muted/60 border-r border-border/50 last:border-r-0 whitespace-nowrap",
                           col.align === "right" && "text-right",
                           col.sort &&
                             "cursor-pointer hover:text-muted-foreground/70 transition-colors",
@@ -534,7 +538,8 @@ export default function Jobs() {
                     ))}
                   </AnimatePresence>
                 </tbody>
-              </table>
+                </table>
+              </div>
 
               {/* Row count & Hints footer */}
               <div className="px-4 py-2.5 border-t border-border flex items-center justify-between bg-muted/30 rounded-b-xl">
@@ -812,7 +817,7 @@ const JobTableRow = memo(
       >
         {/* Company */}
         <td
-          className="px-4 py-2 align-middle border-r border-border/50 last:border-r-0"
+          className="px-3 xl:px-4 py-2 align-middle border-r border-border/50 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "company", job.company)}
         >
           <div className="flex items-center gap-2.5 min-w-0">
@@ -829,7 +834,7 @@ const JobTableRow = memo(
                   className="w-full bg-transparent border-none outline-none p-0 text-[14px] font-semibold tracking-[-0.01em] text-foreground"
                 />
               ) : (
-                <span className="text-[14px] font-semibold tracking-[-0.01em] text-foreground truncate block leading-none">
+                <span className="text-[14px] font-semibold tracking-[-0.01em] text-foreground truncate block leading-5">
                   {job.company || "—"}
                 </span>
               )}
@@ -839,7 +844,7 @@ const JobTableRow = memo(
 
         {/* Role */}
         <td
-          className="px-4 py-2 align-middle border-r border-border/50 last:border-r-0"
+          className="px-3 xl:px-4 py-2 align-middle border-r border-border/50 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "job_title", job.job_title)}
         >
           {cellEditing(job.id, "job_title") ? (
@@ -852,7 +857,7 @@ const JobTableRow = memo(
               className="w-full bg-transparent border-none outline-none p-0 text-[13px] font-medium text-foreground"
             />
           ) : (
-            <span className="text-[13px] font-medium text-foreground/90 truncate block leading-none">
+            <span className="text-[13px] font-medium text-foreground/90 truncate block leading-5">
               {job.job_title || "—"}
             </span>
           )}
@@ -860,7 +865,7 @@ const JobTableRow = memo(
 
         {/* Location */}
         <td
-          className="px-4 py-2 align-middle border-r border-border/50 last:border-r-0"
+          className="px-3 xl:px-4 py-2 align-middle border-r border-border/50 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "location", job.location)}
         >
           <EditableText
@@ -877,7 +882,7 @@ const JobTableRow = memo(
 
         {/* Salary */}
         <td
-          className="px-4 py-2 align-middle text-right border-r border-border/50 last:border-r-0"
+          className="px-3 xl:px-4 py-2 align-middle text-right border-r border-border/50 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "salary", job.salary)}
         >
           <EditableText
@@ -893,7 +898,7 @@ const JobTableRow = memo(
 
         {/* Status */}
         <td
-          className="px-4 py-2 align-middle border-r border-border/50 last:border-r-0"
+          className="px-3 xl:px-4 py-2 align-middle border-r border-border/50 last:border-r-0"
           onClick={(e) => e.stopPropagation()}
         >
           <Select
@@ -914,13 +919,13 @@ const JobTableRow = memo(
         </td>
 
         {/* Source */}
-        <td className="px-4 py-2 align-middle border-r border-border/50 last:border-r-0">
+        <td className="px-3 xl:px-4 py-2 align-middle border-r border-border/50 last:border-r-0">
           <SourceBadge source={job.source} />
         </td>
 
         {/* Actions — revealed on row hover / keyboard focus */}
         <td
-          className="px-4 py-2 align-middle text-right border-r border-border/50 last:border-r-0"
+          className="px-3 xl:px-4 py-2 align-middle text-right border-r border-border/50 last:border-r-0"
           onClick={(e) => e.stopPropagation()}
         >
           <TooltipProvider delayDuration={300}>
