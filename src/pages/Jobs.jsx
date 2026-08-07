@@ -48,6 +48,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import EditJobModal from "@/components/modals/EditJobModal";
 
 // ─── Columns: exactly 6 data + 1 actions ─────────────────────────────────────
 // Fixed pixel widths so nothing shifts regardless of content length
@@ -91,7 +92,11 @@ const condenseSalary = (raw) => {
   const m = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
   if (!m) return s.length > 12 ? s.slice(0, 11) + "…" : s;
 
-  const n = parseFloat(m[1]);
+  let n = parseFloat(m[1]);
+  // "$120k" / "₹60k" style salaries: the raw number already carries the "k" unit,
+  // so promote it to thousands before the thresholds below, otherwise the "k" is
+  // silently dropped and the value is displayed ~1000x too small.
+  if (s.match(/(\d+(?:\.\d+)?)\s*k\b/i)) n *= 1000;
   if (n >= 1_000_000)
     return `${cur}${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M${period}`;
   if (n >= 1_000) return `${cur}${Math.round(n / 1_000)}k${period}`;
@@ -116,7 +121,10 @@ function EditableText({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
         onBlur={onBlur}
-        className="w-full bg-transparent border-none outline-none p-0 text-[13px] text-foreground"
+        className={cn(
+          "w-full bg-transparent border-none outline-none p-0 [text-align:inherit]",
+          textCls || "text-[13px] text-foreground"
+        )}
       />
     );
   }
@@ -141,6 +149,7 @@ export default function Jobs() {
   const [sortDir, setSortDir] = useState("desc");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null); // job being edited in EditJobModal
   const [selectedRow, setSelectedRow] = useState(null);
   const [editingCell, setEditingCell] = useState(null); // { id, col }
   const [editValue, setEditValue] = useState("");
@@ -236,69 +245,91 @@ export default function Jobs() {
   const duplicateJob = useCallback((job) => duplicateMutation.mutate(job), [duplicateMutation]);
 
   // ── Edit ──────────────────────────────────────────────────────────────────────
-  const startEdit = (id, col, val) => {
+  // These are passed into memo(JobTableRow); keep their identities stable so the
+  // memo actually prevents re-renders when unrelated state changes.
+  const startEdit = useCallback((id, col, val) => {
     setSelectedRow(id);
     setEditingCell({ id, col });
     setEditValue(val || "");
-  };
-  const saveEdit = (id, col) => {
-    const j = jobs.find((x) => x.id === id);
-    if (j && j[col] !== editValue) updateJob(id, { [col]: editValue });
-    setEditingCell(null);
-  };
-  const cellEditing = (id, col) =>
-    editingCell?.id === id && editingCell?.col === col;
+  }, []);
 
-  const onInputKey = (e, id, col) => {
-    if (e.key === "Enter") {
+  const saveEdit = useCallback(
+    (id, col) => {
+      const j = jobs.find((x) => x.id === id);
+      if (j && j[col] !== editValue) updateJob(id, { [col]: editValue });
+      setEditingCell(null);
+    },
+    [jobs, editValue, updateJob],
+  );
+
+  const cellEditing = useCallback(
+    (id, col) => editingCell?.id === id && editingCell?.col === col,
+    [editingCell],
+  );
+
+  const onInputKey = useCallback(
+    (e, id, col) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveEdit(id, col);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setEditingCell(null);
+        return;
+      }
+      if (e.key !== "Tab") return;
       e.preventDefault();
       saveEdit(id, col);
-      return;
-    }
-    if (e.key === "Escape") {
-      e.preventDefault();
-      setEditingCell(null);
-      return;
-    }
-    if (e.key !== "Tab") return;
-    e.preventDefault();
-    saveEdit(id, col);
-    const ci = EDIT_COLS.indexOf(col);
-    const ri = filtered.findIndex((j) => j.id === id);
-    if (!e.shiftKey) {
-      if (ci < EDIT_COLS.length - 1)
-        startEdit(
-          id,
-          EDIT_COLS[ci + 1],
-          jobs.find((j) => j.id === id)?.[EDIT_COLS[ci + 1]],
-        );
-      else if (ri < filtered.length - 1) {
-        const nid = filtered[ri + 1].id;
-        startEdit(
-          nid,
-          EDIT_COLS[0],
-          jobs.find((j) => j.id === nid)?.[EDIT_COLS[0]],
-        );
+      const ci = EDIT_COLS.indexOf(col);
+      const ri = filtered.findIndex((j) => j.id === id);
+      if (!e.shiftKey) {
+        if (ci < EDIT_COLS.length - 1)
+          startEdit(
+            id,
+            EDIT_COLS[ci + 1],
+            jobs.find((j) => j.id === id)?.[EDIT_COLS[ci + 1]],
+          );
+        else if (ri < filtered.length - 1) {
+          const nid = filtered[ri + 1].id;
+          startEdit(
+            nid,
+            EDIT_COLS[0],
+            jobs.find((j) => j.id === nid)?.[EDIT_COLS[0]],
+          );
+        }
+      } else {
+        if (ci > 0)
+          startEdit(
+            id,
+            EDIT_COLS[ci - 1],
+            jobs.find((j) => j.id === id)?.[EDIT_COLS[ci - 1]],
+          );
+        else if (ri > 0) {
+          const nid = filtered[ri - 1].id;
+          const lc = EDIT_COLS[EDIT_COLS.length - 1];
+          startEdit(nid, lc, jobs.find((j) => j.id === nid)?.[lc]);
+        }
       }
-    } else {
-      if (ci > 0)
-        startEdit(
-          id,
-          EDIT_COLS[ci - 1],
-          jobs.find((j) => j.id === id)?.[EDIT_COLS[ci - 1]],
-        );
-      else if (ri > 0) {
-        const nid = filtered[ri - 1].id;
-        const lc = EDIT_COLS[EDIT_COLS.length - 1];
-        startEdit(nid, lc, jobs.find((j) => j.id === nid)?.[lc]);
-      }
-    }
-  };
+    },
+    [saveEdit, startEdit, filtered, jobs],
+  );
 
   // ── Keyboard nav ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       if (!selectedRow || editingCell) return;
+      // Don't steal arrow keys while the user is typing elsewhere (search, inputs, selects).
+      const t = e.target;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable)
+      )
+        return;
       const idx = filtered.findIndex((j) => j.id === selectedRow);
       if (e.key === "ArrowDown" && idx < filtered.length - 1) {
         e.preventDefault();
@@ -507,6 +538,7 @@ export default function Jobs() {
                         updateJob={updateJob}
                         duplicateJob={duplicateJob}
                         setDeleteTarget={setDeleteTarget}
+                        setEditTarget={setEditTarget}
                       />
                     ))}
                   </AnimatePresence>
@@ -640,6 +672,13 @@ export default function Jobs() {
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     className="text-[12px] gap-2 cursor-pointer"
+                                    onSelect={() => setEditTarget(job)}
+                                  >
+                                    <Pencil className="w-3 h-3 opacity-50" />
+                                    Edit details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-[12px] gap-2 cursor-pointer"
                                     onSelect={() => duplicateJob(job)}
                                   >
                                     <Copy className="w-3 h-3 opacity-50" />
@@ -728,6 +767,13 @@ export default function Jobs() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Edit details (sets deadline / applied / reply / interview dates) ── */}
+      <EditJobModal
+        job={editTarget}
+        open={!!editTarget}
+        onOpenChange={(open) => !open && setEditTarget(null)}
+      />
     </div>
   );
 }
@@ -775,6 +821,7 @@ const JobTableRow = memo(
     updateJob,
     duplicateJob,
     setDeleteTarget,
+    setEditTarget,
   }) => {
     return (
       <motion.tr
@@ -950,6 +997,12 @@ const JobTableRow = memo(
                 onSelect={() => startEdit(job.id, "company", job.company)}
               >
                 <Pencil className="w-3 h-3 opacity-50" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-[12px] gap-2 cursor-pointer"
+                onSelect={() => setEditTarget(job)}
+              >
+                <Pencil className="w-3 h-3 opacity-50" /> Edit details
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-[12px] gap-2 cursor-pointer"

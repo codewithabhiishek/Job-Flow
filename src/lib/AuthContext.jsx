@@ -8,13 +8,16 @@ export const AuthProvider = ({ children }) => {
   const { user, isLoaded, isSignedIn } = useUser();
   const { getToken } = useClerkAuth();
   const clerk = useClerk();
-  
-  // Sync setting of getToken to prevent race conditions in child components' effects
-  if (isSignedIn && getToken) {
-    apiClient.setGetTokenFn(getToken);
-  } else {
-    apiClient.setGetTokenFn(null);
-  }
+
+  // Keep the API token in sync with the session. Done in an effect (not during
+  // render) to avoid a side-effect in the render phase.
+  useEffect(() => {
+    if (isSignedIn && getToken) {
+      apiClient.setGetTokenFn(getToken);
+    } else {
+      apiClient.setGetTokenFn(null);
+    }
+  }, [isSignedIn, getToken]);
 
   const value = {
     user: user

@@ -15,6 +15,10 @@ const SOURCE_CONFIG = {
   greenhouse: { label: "Greenhouse", icon: Briefcase, className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" },
   workday: { label: "Workday", icon: Briefcase, className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20" },
   "company website": { label: "Company Site", icon: Globe, className: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20" },
+  "y combinator": { label: "Y Combinator", icon: Briefcase, className: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20" },
+  "careers page": { label: "Careers Page", icon: Globe, className: "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20" },
+  ashby: { label: "Ashby", icon: Briefcase, className: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20" },
+  smartrecruiters: { label: "SmartRecruiters", icon: Briefcase, className: "bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/20" },
   manual: { label: "Manual", icon: Briefcase, className: "bg-muted/80 text-muted-foreground border-border/60" },
   unknown: { label: "Unknown", icon: Briefcase, className: "bg-muted/80 text-muted-foreground border-border/60" }
 };

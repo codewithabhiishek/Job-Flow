@@ -103,23 +103,27 @@ export class UrlExtractor {
     return $('body').text().replace(/\s+/g, ' ').trim();
   }
 
-  async extract(urlStr) {
-    // 1. Basic validation and SSRF Prevention
+  /**
+   * Reject any URL that is not a public HTTP(S) host. Re-validated on every
+   * redirect hop so a redirect chain cannot be used to reach internal networks
+   * after the initial check (DNS-rebinding / redirect SSRF).
+   */
+  async assertSafeUrl(urlStr) {
     let u;
     try {
       u = new URL(urlStr);
     } catch {
       throw new Error("Invalid URL provided.");
     }
-    
+
     if (u.protocol !== 'http:' && u.protocol !== 'https:') {
       throw new Error("Invalid URL protocol. Only HTTP and HTTPS are allowed.");
     }
-    
-    if (u.hostname === 'localhost') {
+
+    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname === '::1') {
       throw new Error("Access to localhost is forbidden.");
     }
-    
+
     try {
       const addresses = await dns.resolve(u.hostname);
       for (const ip of addresses) {
@@ -131,22 +135,59 @@ export class UrlExtractor {
       if (err.message.includes("forbidden")) throw err;
       throw new Error("Failed to resolve hostname or invalid domain.");
     }
+  }
 
-    const isATS = this.isKnownATS(urlStr);
-    
-    // We fetch the page
-    const response = await fetch(urlStr, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5'
+  /**
+   * Fetch without auto-following redirects (so we control each hop), with a
+   * hard timeout and an upper bound on page size.
+   */
+  async fetchWithTimeout(urlStr, headers) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    try {
+      const res = await fetch(urlStr, { headers, redirect: 'manual', signal: controller.signal });
+      const length = res.headers.get('content-length');
+      if (length && Number(length) > 2 * 1024 * 1024) {
+        throw new Error("Page exceeds the maximum allowed size.");
       }
-    });
-    
+      return res;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async extract(urlStr) {
+    // Follow redirects manually, validating each hop against SSRF rules.
+    let current = urlStr;
+    let redirects = 0;
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5'
+    };
+
+    let response;
+    for (;;) {
+      await this.assertSafeUrl(current);
+      response = await this.fetchWithTimeout(current, headers);
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (!location) {
+          throw new Error("Redirect response without a Location header.");
+        }
+        if (++redirects > 5) {
+          throw new Error("Too many redirects (max 5).");
+        }
+        current = new URL(location, current).toString();
+        continue;
+      }
+      break;
+    }
+
     if (!response.ok) {
       throw new Error(`Failed to fetch page. Status: ${response.status}`);
     }
-    
+
     const html = await response.text();
     const $ = cheerio.load(html);
     
@@ -156,6 +197,7 @@ export class UrlExtractor {
     const jsonLd = this.extractJsonLd($);
     
     // 3. Strict Verification
+    const isATS = this.isKnownATS(current);
     let isJobPosting = isATS;
     if (jsonLd) {
       isJobPosting = true; // JobPosting schema present
@@ -175,7 +217,7 @@ export class UrlExtractor {
       // If no JSON-LD and not a known ATS, use a loose heuristic based on title length or keywords
       // But we will allow it to proceed and let the LLM decide if it's too ambiguous, 
       // UNLESS it's definitely a homepage (e.g. path is just / or /careers)
-      if (u.pathname === '/' || u.pathname === '/careers' || u.pathname === '/jobs') {
+      if (new URL(current).pathname === '/' || new URL(current).pathname === '/careers' || new URL(current).pathname === '/jobs') {
         throw new Error("This URL is not an individual job posting.");
       }
     }
@@ -184,7 +226,7 @@ export class UrlExtractor {
     const cleanText = this.cleanHtml($);
     
     // 5. Construct final prompt string to send to AI
-    let structuredPayload = "Job URL: " + urlStr + "\\n\\n";
+    let structuredPayload = "Job URL: " + current + "\\n\\n";
     
     if (jsonLd) {
       structuredPayload += "=== STRUCTURED METADATA ===\\n";

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { safeReturnTo } from "@/lib/authReturnTo";
 
 export default function Register() {
@@ -82,8 +82,7 @@ export default function Register() {
     setError("");
     try {
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-      toast({
-        title: "Code sent",
+      toast("Code sent", {
         description: "Check your email for the new code.",
       });
     } catch (err) {

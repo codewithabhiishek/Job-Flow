@@ -59,15 +59,26 @@ export default function Analytics() {
   }, [filtered]);
 
   const timelineData = useMemo(() => {
-    const byWeek = {};
+    // Jobs arrive sorted newest-first, so a plain insertion-ordered map would plot
+    // the line chart in reverse-chronological order. Key by the week's timestamp and
+    // sort ascending so the x-axis runs oldest → newest regardless of input order.
+    const byWeek = new Map();
     filtered.forEach((j) => {
       const d = new Date(j.created_date);
-      const weekStart = new Date(d);
-      weekStart.setDate(d.getDate() - d.getDay());
-      const key = weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      byWeek[key] = (byWeek[key] || 0) + 1;
+      if (Number.isNaN(d.getTime())) return;
+      const weekStart = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay());
+      const ts = weekStart.getTime();
+      if (!byWeek.has(ts)) {
+        byWeek.set(ts, {
+          week: weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+          count: 0,
+        });
+      }
+      byWeek.get(ts).count += 1;
     });
-    return Object.entries(byWeek).map(([week, count]) => ({ week, count }));
+    return [...byWeek.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([, v]) => v);
   }, [filtered]);
 
   const pipelineData = useMemo(() => {
