@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 export default function Logo({ className, iconOnly = false, size = "md", animated = false }) {
   const sizeClasses = {
     sm: "w-4 h-4",
-    md: "w-6 h-6",
+    md: "w-7 h-7",
     lg: "w-7 h-7",
     xl: "w-10 h-10",
   };

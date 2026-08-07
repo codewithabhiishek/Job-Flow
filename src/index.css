@@ -137,18 +137,18 @@
    Transform/opacity only → GPU accelerated, no layout thrash.
    The global prefers-reduced-motion rule collapses these to ~0 duration. */
 @keyframes logo-float {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-2px); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-2px) scale(1.02); }
 }
 @keyframes logo-glow {
-  0%, 100% { opacity: 0.4; }
-  50%      { opacity: 0.95; }
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
 }
 .logo-float {
-  animation: logo-float 6s ease-in-out infinite;
+  animation: logo-float 3.8s ease-in-out infinite;
   will-change: transform;
 }
 .logo-glow {
-  animation: logo-glow 6s ease-in-out infinite;
+  animation: logo-glow 3.8s ease-in-out infinite;
   will-change: opacity;
 }
