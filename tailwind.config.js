@@ -62,8 +62,10 @@ module.exports = {
   			}
   		},
   		fontFamily: {
-  			sans: ['Geist Sans', 'system-ui', 'sans-serif'],
-  			mono: ['monospace']
+  			sans: ['Inter', 'system-ui', 'sans-serif'],
+  			heading: ['Space Grotesk', 'system-ui', 'sans-serif'],
+  			table: ['IBM Plex Sans', 'system-ui', 'sans-serif'],
+  			mono: ['IBM Plex Mono', 'ui-monospace', 'monospace']
   		},
       fontSize: {
         'page-title': ['24px', { lineHeight: '1.2', letterSpacing: '-0.03em', fontWeight: '700' }],

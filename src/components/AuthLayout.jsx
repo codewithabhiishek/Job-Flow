@@ -17,7 +17,7 @@ export default function AuthLayout({
               aria-hidden="true"
             />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground font-heading">
             {title}
           </h1>
           {subtitle && <p className="text-muted-foreground mt-2">{subtitle}</p>}

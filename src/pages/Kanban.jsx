@@ -97,7 +97,7 @@ export default function Kanban() {
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   {col.label}
                 </span>
-                <span className="text-[11px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded tnum">
+                <span className="text-[11px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded tnum font-mono">
                   {col.jobs.length}
                 </span>
               </div>
@@ -123,7 +123,7 @@ export default function Kanban() {
                               dragSnapshot.isDragging && "shadow-lg border-ring/40 rotate-1",
                             )}
                           >
-                            <div className="mb-1.5 flex gap-2.5">
+                            <div className="mb-1.5 flex gap-2.5 font-table">
                               <CompanyAvatar company={job.company} logo={job.logo} size={28} />
                               <div className="flex-1 min-w-0">
                                 <p className="text-[13px] font-medium text-foreground truncate leading-tight">
@@ -145,7 +145,7 @@ export default function Kanban() {
                                   </span>
                                 )}
                                 {job.salary && (
-                                  <span className="font-medium text-foreground/70 tnum">
+                                  <span className="font-medium text-foreground/70 tnum font-mono">
                                     {job.salary}
                                   </span>
                                 )}

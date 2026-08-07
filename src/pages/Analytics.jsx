@@ -23,7 +23,7 @@ function AnimatedCounter({ value, suffix = "" }) {
     return () => { controls.stop(); unsub(); };
   }, [value]);
 
-  return <span className="tnum">{display}{suffix}</span>;
+  return <span className="tnum font-mono">{display}{suffix}</span>;
 }
 
 export default function Analytics() {
@@ -220,7 +220,7 @@ export default function Analytics() {
                   <div key={i}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[13px] text-foreground truncate">{name}</span>
-                      <span className="text-[12px] text-muted-foreground tnum ml-2 shrink-0">{count}</span>
+                      <span className="text-[12px] text-muted-foreground tnum ml-2 shrink-0 font-mono">{count}</span>
                     </div>
                     <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                       <motion.div
@@ -253,11 +253,11 @@ export default function Analytics() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Remote jobs</span>
-              <span className="text-foreground font-medium tnum">{filtered.filter((j) => j.remote).length}</span>
+              <span className="text-foreground font-medium tnum font-mono">{filtered.filter((j) => j.remote).length}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Active (non-rejected)</span>
-              <span className="text-foreground font-medium tnum">{filtered.filter((j) => !["rejected", "ghosted"].includes(j.status)).length}</span>
+              <span className="text-foreground font-medium tnum font-mono">{filtered.filter((j) => !["rejected", "ghosted"].includes(j.status)).length}</span>
             </div>
           </div>
         </div>
@@ -296,8 +296,8 @@ function ListCard({ title, items }) {
         <div className="space-y-2">
           {items.map(([name, count], i) => (
             <div key={i} className="flex items-center justify-between text-[13px]">
-              <span className="text-foreground/80 truncate">{name}</span>
-              <span className="text-foreground font-medium ml-2 shrink-0 tnum">{count}</span>
+              <span className="text-foreground/80 truncate font-table">{name}</span>
+              <span className="text-foreground font-medium ml-2 shrink-0 tnum font-mono">{count}</span>
             </div>
           ))}
         </div>

@@ -195,7 +195,7 @@ export default function Landing() {
             AI-powered job tracker
           </motion.div>
           
-          <motion.h1 variants={FADE_UP} className="text-[44px] sm:text-[56px] leading-[1.1] font-bold text-foreground mb-6 tracking-tight">
+          <motion.h1 variants={FADE_UP} className="text-[44px] sm:text-[56px] leading-[1.1] font-bold text-foreground mb-6 tracking-tight font-heading">
             Track every application.<br />Type nothing.
           </motion.h1>
           
@@ -250,7 +250,7 @@ export default function Landing() {
             </div>
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-table-text">
+              <table className="w-full text-left text-table-text font-table">
                 <thead>
                   <tr className="border-b border-border bg-muted/20">
                     {["COMPANY", "ROLE", "LOCATION", "SALARY", "STATUS", "APPLIED"].map((h) => (
@@ -271,13 +271,13 @@ export default function Landing() {
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{row.role}</td>
                       <td className="px-4 py-3 text-muted-foreground">{row.location}</td>
-                      <td className="px-4 py-3 text-foreground tnum">{row.salary}</td>
+                      <td className="px-4 py-3 text-foreground tnum font-mono">{row.salary}</td>
                       <td className="px-4 py-3">
                         <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium", STATUS_CONFIG[row.status]?.className)}>
                           {STATUS_CONFIG[row.status]?.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground tnum">{row.applied}</td>
+                      <td className="px-4 py-3 text-muted-foreground tnum font-mono">{row.applied}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -297,7 +297,7 @@ export default function Landing() {
           className="text-center mb-16"
         >
           <motion.span variants={FADE_UP} className="type-label">How it works</motion.span>
-          <motion.h2 variants={FADE_UP} className="text-[32px] font-bold tracking-tight text-foreground mt-3">
+          <motion.h2 variants={FADE_UP} className="text-[32px] font-bold tracking-tight text-foreground mt-3 font-heading">
             From found to tracked in 3 seconds.
           </motion.h2>
         </motion.div>
@@ -319,7 +319,7 @@ export default function Landing() {
                 <div className="w-16 h-16 rounded-2xl bg-card border border-border shadow-sm flex items-center justify-center mb-6 relative z-10 group-hover:-translate-y-1 transition-transform duration-300">
                   <Icon className="w-7 h-7 text-chart-1" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-[17px] font-semibold text-foreground mb-2">{step.title}</h3>
+                <h3 className="text-[17px] font-semibold text-foreground mb-2 font-heading">{step.title}</h3>
                 <p className="text-[14px] text-muted-foreground leading-relaxed px-2">{step.description}</p>
               </motion.div>
             );
@@ -338,7 +338,7 @@ export default function Landing() {
             className="text-center mb-16"
           >
             <motion.span variants={FADE_UP} className="type-label">Features</motion.span>
-            <motion.h2 variants={FADE_UP} className="text-[32px] font-bold tracking-tight text-foreground mt-3">
+            <motion.h2 variants={FADE_UP} className="text-[32px] font-bold tracking-tight text-foreground mt-3 font-heading">
               Everything you need. Nothing you don't.
             </motion.h2>
           </motion.div>
@@ -376,7 +376,7 @@ export default function Landing() {
           viewport={{ once: true, margin: "-100px" }}
           variants={STAGGER}
         >
-          <motion.h2 variants={FADE_UP} className="text-[36px] font-bold tracking-tight text-foreground mb-4">
+          <motion.h2 variants={FADE_UP} className="text-[36px] font-bold tracking-tight text-foreground mb-4 font-heading">
             Ready to stop losing track?
           </motion.h2>
           <motion.p variants={FADE_UP} className="text-muted-foreground mb-8 text-[16px] leading-relaxed">

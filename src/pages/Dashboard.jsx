@@ -234,7 +234,7 @@ function MetricCard({ label, value, icon: Icon }) {
         <span className="text-[12px] font-medium text-muted-foreground">{label}</span>
         <Icon className="w-3.5 h-3.5 text-muted-foreground/60" strokeWidth={1.5} />
       </div>
-      <p className="text-[22px] font-semibold text-foreground tracking-tight tnum">{value}</p>
+      <p className="text-[22px] font-semibold text-foreground tracking-tight tnum font-mono">{value}</p>
     </div>
   );
 }

@@ -460,7 +460,7 @@ export default function Jobs() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-5 shrink-0">
         <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-foreground">
+          <h1 className="text-[20px] font-semibold tracking-tight text-foreground font-heading">
           Jobs
           </h1>
           <p className="hidden sm:block mt-1 text-[12px] text-muted-foreground">Keep every opportunity and next step in one calm, focused view.</p>
@@ -529,7 +529,7 @@ export default function Jobs() {
             {/* ── Desktop table ─────────────────────────────────────────── */}
             <div className="hidden md:block overflow-x-auto">
               <table
-                className="w-full text-left table-fixed"
+                className="w-full text-left table-fixed font-table"
                 style={{ minWidth: TABLE_MIN_W }}
                 ref={tableRef}
               >
@@ -595,7 +595,7 @@ export default function Jobs() {
                   <span className="opacity-30">•</span>
                   <span>Press <kbd className="font-sans px-1.5 py-0.5 bg-muted rounded border border-border/50 text-[10px]">Enter</kbd> to edit</span>
                 </div>
-                <span className="text-[11.5px] text-muted-foreground/40 tabular-nums font-medium">
+                <span className="text-[11.5px] text-muted-foreground/40 tabular-nums font-medium font-mono">
                   {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
                   {statusFilter !== "all" && " · filtered"}
                 </span>
@@ -603,7 +603,7 @@ export default function Jobs() {
             </div>
 
             {/* ── Mobile cards ───────────────────────────────────────────── */}
-            <div className="md:hidden divide-y divide-border/40">
+            <div className="md:hidden divide-y divide-border/40 font-table">
               <AnimatePresence initial={false}>
                 {filtered.map((job) => {
                   const sal = condenseSalary(job.salary);
@@ -749,7 +749,7 @@ export default function Jobs() {
                               </span>
                             )}
                             {sal && (
-                              <span className="text-[11.5px] tabular-nums text-muted-foreground/50">
+                              <span className="text-[11.5px] tabular-nums text-muted-foreground/50 font-mono">
                                 {sal}
                               </span>
                             )}
@@ -824,7 +824,7 @@ function Chip({ children, active, onClick, count }) {
       {count > 0 && (
         <span
           className={cn(
-            "tabular-nums text-[10px]",
+            "tabular-nums text-[10px] font-mono",
             active ? "opacity-65" : "opacity-40",
           )}
         >
@@ -953,7 +953,7 @@ const JobTableRow = memo(
             onChange={setEditValue}
             onKeyDown={(e) => onInputKey(e, job.id, "salary")}
             onBlur={() => saveEdit(job.id, "salary")}
-            textCls="text-[12.5px] tabular-nums font-semibold text-foreground tracking-[-0.01em]"
+            textCls="text-[12.5px] tabular-nums font-semibold text-foreground tracking-[-0.01em] font-mono"
           />
         </td>
 

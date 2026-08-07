@@ -140,7 +140,7 @@ export default function CalendarPage() {
                   <>
                     <span
                       className={cn(
-                        "inline-block text-[12px] mb-1.5 font-medium tnum",
+                        "inline-block text-[12px] mb-1.5 font-medium tnum font-mono",
                         isToday(day)
                           ? "w-6 h-6 leading-6 text-center rounded-full bg-chart-1 text-white"
                           : "text-muted-foreground",
