@@ -132,3 +132,23 @@
   .type-table-head { @apply text-table-header uppercase tracking-wider text-muted-foreground; }
   .tnum { font-variant-numeric: tabular-nums; }
 }
+
+/* ── Brand logo micro-animations (sidebar) ────────────────────────────────
+   Transform/opacity only → GPU accelerated, no layout thrash.
+   The global prefers-reduced-motion rule collapses these to ~0 duration. */
+@keyframes logo-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+@keyframes logo-glow {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.95; }
+}
+.logo-float {
+  animation: logo-float 6s ease-in-out infinite;
+  will-change: transform;
+}
+.logo-glow {
+  animation: logo-glow 6s ease-in-out infinite;
+  will-change: opacity;
+}

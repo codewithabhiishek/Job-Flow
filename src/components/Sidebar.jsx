@@ -40,10 +40,11 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
         )}
       >
         <div className="flex items-center transition-transform duration-300 ease-out group-hover:scale-[1.04]">
-          <Logo 
-            size="md" 
-            iconOnly={isCollapsed} 
-            className="text-foreground/90 group-hover:text-foreground group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.2)] transition-all duration-300 gap-2.5"
+          <Logo
+            animated
+            size="md"
+            iconOnly={isCollapsed}
+            className="text-foreground/90 group-hover:text-foreground group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.25)] transition-all duration-300 gap-2.5"
           />
         </div>
       </Link>
