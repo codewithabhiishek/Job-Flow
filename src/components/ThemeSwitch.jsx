@@ -2,8 +2,11 @@ import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Theme-aware toggle. `checked === true` means dark is the active theme.
-// The sliding highlight always sits under the currently active theme's icon,
-// so users never have to guess which side means what.
+//
+// Layout is fixed by convention:  🌙 Dark (left) | ☀️ Light (right)
+// The sliding highlight always sits under the currently active theme's icon:
+//   dark  (checked=true)  -> highlight on the left  (Moon)
+//   light (checked=false) -> highlight on the right (Sun)
 const ThemeSwitch = ({ checked, onChange }) => {
   return (
     <button
@@ -19,13 +22,14 @@ const ThemeSwitch = ({ checked, onChange }) => {
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       )}
     >
-      {/* Sliding highlight — slides to the active theme side */}
+      {/* Sliding highlight — slides to the active theme side.
+          Dark (Moon) is the LEFT slot, so dark-active keeps it on the left. */}
       <span
         aria-hidden
         className={cn(
           "absolute top-1 left-1 w-[34px] h-7 rounded-full bg-background border border-border/70 shadow-sm",
           "flex items-center justify-center transition-transform duration-300 ease-in-out",
-          checked ? "translate-x-[34px]" : "translate-x-0",
+          checked ? "translate-x-0" : "translate-x-[34px]",
         )}
       >
         {checked ? (
@@ -35,21 +39,22 @@ const ThemeSwitch = ({ checked, onChange }) => {
         )}
       </span>
 
-      {/* Track icons — inactive side is muted, active side sits on the highlight */}
-      <span className="flex-1 flex items-center justify-center">
-        <Sun
-          className={cn(
-            "w-4 h-4 transition-colors duration-300",
-            checked ? "text-muted-foreground/40" : "text-primary",
-          )}
-          strokeWidth={2.2}
-        />
-      </span>
+      {/* Track icons — LEFT is Dark (Moon), RIGHT is Light (Sun).
+          Inactive side is muted; the active side sits on the highlight. */}
       <span className="flex-1 flex items-center justify-center">
         <Moon
           className={cn(
             "w-4 h-4 transition-colors duration-300",
             checked ? "text-primary" : "text-muted-foreground/40",
+          )}
+          strokeWidth={2.2}
+        />
+      </span>
+      <span className="flex-1 flex items-center justify-center">
+        <Sun
+          className={cn(
+            "w-4 h-4 transition-colors duration-300",
+            checked ? "text-muted-foreground/40" : "text-primary",
           )}
           strokeWidth={2.2}
         />
