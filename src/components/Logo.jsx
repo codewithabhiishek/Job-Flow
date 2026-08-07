@@ -2,34 +2,27 @@ import { cn } from "@/lib/utils";
 
 export default function Logo({ className, iconOnly = false, size = "md", animated = false }) {
   const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-7 h-7",
-    lg: "w-7 h-7",
-    xl: "w-10 h-10",
+    sm: "w-5 h-5",
+    md: "w-9 h-9",
+    lg: "w-9 h-9",
+    xl: "w-11 h-11",
   };
 
   const textClasses = {
     sm: "text-[13px]",
-    md: "text-[14px]",
-    lg: "text-[18px]",
-    xl: "text-[24px]",
+    md: "text-[16px]",
+    lg: "text-[19px]",
+    xl: "text-[26px]",
   };
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2.5", className)}>
       <div
         className={cn(
-          "relative flex items-center justify-center shrink-0",
+          "relative flex items-center justify-center shrink-0 overflow-hidden rounded-[8px] transition-[filter] duration-300",
           sizeClasses[size],
-          animated && "logo-float",
         )}
       >
-        {animated && (
-          <span
-            aria-hidden
-            className="logo-glow absolute inset-0 rounded-full bg-foreground/20 blur-[6px]"
-          />
-        )}
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -51,9 +44,17 @@ export default function Logo({ className, iconOnly = false, size = "md", animate
             strokeLinejoin="round"
           />
         </svg>
+        {/* Light sweep — a narrow sheen crosses the mark once per cycle.
+            Transform-only, GPU accelerated, clipped to the icon bounds. */}
+        {animated && <span aria-hidden className="logo-sweep" />}
       </div>
       {!iconOnly && (
-        <span className={cn("font-bold tracking-tight text-foreground leading-none flex items-center", textClasses[size])}>
+        <span
+          className={cn(
+            "font-heading font-semibold tracking-[-0.02em] text-foreground leading-none flex items-center",
+            textClasses[size],
+          )}
+        >
           JobFlow
         </span>
       )}

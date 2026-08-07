@@ -142,22 +142,25 @@
   .tnum { font-variant-numeric: tabular-nums; }
 }
 
-/* ── Brand logo micro-animations (sidebar) ────────────────────────────────
-   Transform/opacity only → GPU accelerated, no layout thrash.
-   The global prefers-reduced-motion rule collapses these to ~0 duration. */
-@keyframes logo-float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50%      { transform: translateY(-2px) scale(1.02); }
+/* ── Brand logo micro-animation (sidebar) ─────────────────────────────────
+   A narrow light sheen sweeps across the mark once per 7s cycle, then rests.
+   Transform-only → GPU accelerated, no layout thrash, no glow/shadow.
+   The global prefers-reduced-motion rule collapses this to ~0 duration. */
+@keyframes logo-sweep {
+  0%   { transform: translateX(-160%) skewX(-14deg); }
+  18%  { transform: translateX(260%) skewX(-14deg); }
+  100% { transform: translateX(260%) skewX(-14deg); }
 }
-@keyframes logo-glow {
-  0%, 100% { opacity: 0.55; }
-  50%      { opacity: 1; }
-}
-.logo-float {
-  animation: logo-float 3.8s ease-in-out infinite;
+.logo-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 32%,
+    hsl(var(--foreground) / 0.16) 50%,
+    transparent 68%
+  );
+  animation: logo-sweep 7s ease-in-out infinite;
   will-change: transform;
-}
-.logo-glow {
-  animation: logo-glow 3.8s ease-in-out infinite;
-  will-change: opacity;
 }

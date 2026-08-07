@@ -44,7 +44,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
             animated
             size="md"
             iconOnly={isCollapsed}
-            className="text-foreground/90 group-hover:text-foreground group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.25)] transition-all duration-300 gap-2.5"
+            className="text-foreground/90 group-hover:text-foreground group-hover:brightness-110 transition-all duration-300 gap-2.5"
           />
         </div>
       </Link>
