@@ -492,7 +492,7 @@ export default function Jobs() {
 
       {/* ── Table container ────────────────────────────────────────────────── */}
       <div
-        className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-card"
+        className="overflow-hidden rounded-xl border border-border/90 bg-card shadow-card"
         onClick={(e) => e.stopPropagation()}
       >
         {filtered.length === 0 ? (
@@ -534,7 +534,7 @@ export default function Jobs() {
               >
                 {/* thead */}
                 <thead>
-                  <tr className="border-b border-border/60">
+                  <tr className="border-b border-border/80">
                     {COLS.map((col) => (
                       <th
                         key={col.key}
@@ -546,7 +546,7 @@ export default function Jobs() {
                         }
                         className={cn(
                           col.w,
-                          "group px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/55 select-none bg-muted/30 border-r border-border/40 last:border-r-0",
+                          "group px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/90 select-none bg-muted/45 border-r border-border/60 last:border-r-0",
                           col.align === "right" && "text-right",
                           col.sort &&
                             "cursor-pointer hover:text-muted-foreground/70 transition-colors",
@@ -865,7 +865,7 @@ const JobTableRow = memo(
           }
         }}
         className={cn(
-          "group align-middle h-[54px] border-b border-border/40 last:border-0 cursor-pointer select-none outline-none",
+          "group align-middle h-[54px] border-b border-border/55 last:border-0 cursor-pointer select-none outline-none",
           "transition-[background-color,box-shadow] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
           sel
             ? "bg-primary/[0.045] shadow-[inset_3px_0_0_hsl(var(--primary))]"
@@ -874,7 +874,7 @@ const JobTableRow = memo(
       >
         {/* Company */}
         <td
-          className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0"
+          className="px-4 py-2 align-middle border-r border-border/45 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "company", job.company)}
         >
           <div className="flex items-center gap-2.5 min-w-0">
@@ -888,10 +888,10 @@ const JobTableRow = memo(
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={(e) => onInputKey(e, job.id, "company")}
                   onBlur={() => saveEdit(job.id, "company")}
-                  className="w-full bg-transparent border-none outline-none p-0 text-[13px] font-semibold text-foreground"
+                  className="w-full bg-transparent border-none outline-none p-0 text-[14px] font-semibold tracking-[-0.01em] text-foreground"
                 />
               ) : (
-                <span className="text-[13px] font-semibold text-foreground truncate block leading-none">
+                <span className="text-[14px] font-semibold tracking-[-0.01em] text-foreground truncate block leading-none">
                   {job.company || "—"}
                 </span>
               )}
@@ -901,7 +901,7 @@ const JobTableRow = memo(
 
         {/* Role */}
         <td
-          className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0"
+          className="px-4 py-2 align-middle border-r border-border/45 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "job_title", job.job_title)}
         >
           {cellEditing(job.id, "job_title") ? (
@@ -914,7 +914,7 @@ const JobTableRow = memo(
               className="w-full bg-transparent border-none outline-none p-0 text-[13px] font-medium text-foreground"
             />
           ) : (
-            <span className="text-[13px] font-medium text-foreground truncate block leading-none">
+            <span className="text-[13px] font-medium text-foreground/90 truncate block leading-none">
               {job.job_title || "—"}
             </span>
           )}
@@ -922,7 +922,7 @@ const JobTableRow = memo(
 
         {/* Location */}
         <td
-          className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0"
+          className="px-4 py-2 align-middle border-r border-border/45 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "location", job.location)}
         >
           <EditableText
@@ -932,13 +932,13 @@ const JobTableRow = memo(
             onChange={setEditValue}
             onKeyDown={(e) => onInputKey(e, job.id, "location")}
             onBlur={() => saveEdit(job.id, "location")}
-            textCls="text-[12px] text-muted-foreground font-medium"
+            textCls="text-[12.5px] text-muted-foreground font-medium tracking-[-0.01em]"
           />
         </td>
 
         {/* Salary */}
         <td
-          className="px-4 py-2 align-middle text-right border-r border-border/25 last:border-r-0"
+          className="px-4 py-2 align-middle text-right border-r border-border/45 last:border-r-0"
           onDoubleClick={() => startEdit(job.id, "salary", job.salary)}
         >
           <EditableText
@@ -948,13 +948,13 @@ const JobTableRow = memo(
             onChange={setEditValue}
             onKeyDown={(e) => onInputKey(e, job.id, "salary")}
             onBlur={() => saveEdit(job.id, "salary")}
-            textCls="text-[12px] tabular-nums font-medium text-foreground/80"
+            textCls="text-[12.5px] tabular-nums font-semibold text-foreground tracking-[-0.01em]"
           />
         </td>
 
         {/* Status */}
         <td
-          className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0"
+          className="px-4 py-2 align-middle border-r border-border/45 last:border-r-0"
           onClick={(e) => e.stopPropagation()}
         >
           <Select
@@ -975,13 +975,13 @@ const JobTableRow = memo(
         </td>
 
         {/* Source */}
-        <td className="px-4 py-2 align-middle border-r border-border/25 last:border-r-0">
+        <td className="px-4 py-2 align-middle border-r border-border/45 last:border-r-0">
           <SourceBadge source={job.source} />
         </td>
 
         {/* Actions — revealed on row hover / keyboard focus */}
         <td
-          className="px-4 py-2 align-middle text-right border-r border-border/25 last:border-r-0"
+          className="px-4 py-2 align-middle text-right border-r border-border/45 last:border-r-0"
           onClick={(e) => e.stopPropagation()}
         >
           <TooltipProvider delayDuration={300}>

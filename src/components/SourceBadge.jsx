@@ -42,7 +42,7 @@ export default function SourceBadge({ source }) {
     <div
       className={cn(
         "inline-flex items-center justify-start w-[104px] h-[22px] px-1.5 rounded-[5px] border gap-1.5",
-        "text-[11px] font-semibold tracking-[0.01em] shrink-0",
+        "text-[11px] font-medium tracking-[0.01em] shrink-0",
         config.className
       )}
       title={config.label}
