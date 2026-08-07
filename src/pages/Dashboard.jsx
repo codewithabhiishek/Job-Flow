@@ -1,5 +1,6 @@
 import { useOutletContext } from "react-router-dom";
 import { apiClient } from "@/api/client";
+import { formatLocation } from "@/lib/utils";
 import {
   Building2,
   Send,
@@ -130,8 +131,8 @@ export default function Dashboard() {
                     )}
                   </p>
                   {job.location && (
-                    <p className="text-[12px] text-muted-foreground truncate">
-                      {job.location}
+                    <p className="text-[12px] text-muted-foreground truncate" title={job.location}>
+                      {formatLocation(job.location)}
                     </p>
                   )}
                 </div>

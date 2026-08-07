@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { apiClient } from "@/api/client";
+import { formatLocation } from "@/lib/utils";
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -101,8 +102,11 @@ export default function Analytics() {
 
   const topLocations = useMemo(() => {
     const counts = {};
+    // Aggregate by the FULL location so counts stay accurate; only the
+    // displayed label is shortened via formatLocation.
     filtered.forEach((j) => { if (j.location) counts[j.location] = (counts[j.location] || 0) + 1; });
-    return Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 5);
+    return Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 5)
+      .map(([loc, count]) => [formatLocation(loc), count]);
   }, [filtered]);
 
   const topSkills = useMemo(() => {

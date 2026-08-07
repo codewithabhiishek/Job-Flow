@@ -2,7 +2,7 @@ import { useOutletContext } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { apiClient } from "@/api/client";
 import { STATUS_ORDER, STATUS_CONFIG } from "@/components/StatusBadge";
-import { cn } from "@/lib/utils";
+import { cn, formatLocation } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -140,7 +140,9 @@ export default function Kanban() {
                             <div className="flex items-center justify-between text-[11px]">
                               <div className="flex flex-col gap-0.5 text-muted-foreground min-w-0 flex-1 mr-2">
                                 {job.location && (
-                                  <span className="truncate">{job.location}</span>
+                                  <span className="truncate" title={job.location}>
+                                    {formatLocation(job.location)}
+                                  </span>
                                 )}
                                 {job.salary && (
                                   <span className="font-medium text-foreground/70 tnum">

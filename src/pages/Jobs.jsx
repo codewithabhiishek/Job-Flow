@@ -51,7 +51,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+import { cn, formatLocation } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import EditJobModal from "@/components/modals/EditJobModal";
@@ -120,6 +120,7 @@ function EditableText({
   onKeyDown,
   onBlur,
   textCls,
+  title,
 }) {
   if (isEditing) {
     return (
@@ -137,7 +138,7 @@ function EditableText({
     );
   }
   return (
-    <span className={cn("truncate block leading-none", textCls)}>
+    <span className={cn("truncate block leading-none", textCls)} title={title}>
       {value || "—"}
     </span>
   );
@@ -740,8 +741,11 @@ export default function Jobs() {
                           </div>
                           <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
                             {job.location && (
-                              <span className="text-[11.5px] text-muted-foreground/50">
-                                {job.location}
+                              <span
+                                className="text-[11.5px] text-muted-foreground/50 truncate"
+                                title={job.location}
+                              >
+                                {formatLocation(job.location)}
                               </span>
                             )}
                             {sal && (
@@ -927,7 +931,8 @@ const JobTableRow = memo(
         >
           <EditableText
             isEditing={cellEditing(job.id, "location")}
-            value={job.location}
+            value={formatLocation(job.location)}
+            title={job.location}
             editValue={editValue}
             onChange={setEditValue}
             onKeyDown={(e) => onInputKey(e, job.id, "location")}
