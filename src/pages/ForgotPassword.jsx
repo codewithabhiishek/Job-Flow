@@ -10,6 +10,7 @@ import AuthLayout from "@/components/AuthLayout";
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const { isLoaded, signIn } = useSignIn();
   const navigate = useNavigate();
 
@@ -17,6 +18,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     if (!isLoaded) return;
     setLoading(true);
+    setError("");
     try {
       await signIn.create({
         strategy: "reset_password_email_code",
@@ -24,7 +26,11 @@ export default function ForgotPassword() {
       });
       navigate(`/reset-password?email=${encodeURIComponent(email)}`);
     } catch (err) {
-      navigate(`/reset-password?email=${encodeURIComponent(email)}`);
+      setError(
+        err?.errors?.[0]?.longMessage ||
+          err?.errors?.[0]?.message ||
+          "Couldn't send a reset code to that address. Check the email and try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -42,6 +48,12 @@ export default function ForgotPassword() {
         </Link>
       }
     >
+      {error && (
+        <div role="alert" className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          {error}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email address</Label>

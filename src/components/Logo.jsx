@@ -4,7 +4,7 @@ export default function Logo({ className, iconOnly = false, size = "md", animate
   const sizeClasses = {
     sm: "w-5 h-5",
     md: "w-9 h-9",
-    lg: "w-9 h-9",
+    lg: "w-10 h-10",
     xl: "w-11 h-11",
   };
 
@@ -27,6 +27,8 @@ export default function Logo({ className, iconOnly = false, size = "md", animate
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+          focusable="false"
           className="relative w-full h-full text-foreground"
         >
           <path

@@ -29,7 +29,7 @@
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 42%;
     --accent: 0 0% 95%;
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84% 60%;
@@ -129,14 +129,17 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/30;
   }
+
+  /* Firefox equivalent of the thin WebKit scrollbar above */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
 }
 
 @layer components {
   .type-page-title { @apply text-page-title font-heading; }
-  .type-section-title { @apply text-section-title font-heading; }
   .type-card-title { @apply text-card-title font-heading; }
-  .type-body { @apply text-body-base font-sans; }
-  .type-body-sm { @apply text-body-sm font-sans; }
   .type-label { @apply text-table-header uppercase tracking-wider text-muted-foreground; }
   .type-table-head { @apply text-table-header uppercase tracking-wider text-muted-foreground font-table; }
   .tnum { font-variant-numeric: tabular-nums; }

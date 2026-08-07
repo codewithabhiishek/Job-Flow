@@ -44,5 +44,43 @@ export function formatLocation(value) {
   return city;
 }
 
+/**
+ * Condense a raw salary string to a single short token for dense UI
+ * (tables, kanban cards). Returns null when nothing meaningful is present.
+ *   "₹24,00,000 - ₹32,00,000 /year" → "₹24L"
+ *   "$120k-$150k"                    → "$120k"
+ *   "Not disclosed"                  → null
+ */
+export function condenseSalary(raw) {
+  if (!raw) return null;
+  const s = raw.toString().trim();
+  if (!s || /not\s*disclosed/i.test(s)) return null;
+
+  let period = "";
+  if (/\/(month|mo|monthly)/i.test(s)) period = "/mo";
+  else if (/\/(year|yr|annual|annum|pa)/i.test(s)) period = "/yr";
+  else if (/\/(hour|hr)/i.test(s)) period = "/hr";
+
+  const cur = (s.match(/[₹$€£¥]/) ?? [""])[0];
+
+  if (/lpa/i.test(s)) {
+    const m = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+    return m ? `${cur}${parseFloat(m[1])}L` : null;
+  }
+
+  const m = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+  if (!m) return s.length > 12 ? s.slice(0, 11) + "…" : s;
+
+  let n = parseFloat(m[1]);
+  // "$120k" / "₹60k" style salaries: the raw number already carries the "k" unit,
+  // so promote it to thousands before the thresholds below, otherwise the "k" is
+  // silently dropped and the value is displayed ~1000x too small.
+  if (s.match(/(\d+(?:\.\d+)?)\s*k\b/i)) n *= 1000;
+  if (n >= 1_000_000)
+    return `${cur}${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M${period}`;
+  if (n >= 1_000) return `${cur}${Math.round(n / 1_000)}k${period}`;
+  return `${cur}${n}${period}`;
+}
+
 
 export const isIframe = window.self !== window.top;

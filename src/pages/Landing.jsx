@@ -175,7 +175,7 @@ export default function Landing() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleOpenAppCta}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Open app <ArrowRight className="w-4 h-4" />
           </motion.button>
@@ -195,7 +195,7 @@ export default function Landing() {
             AI-powered job tracker
           </motion.div>
           
-          <motion.h1 variants={FADE_UP} className="text-[44px] sm:text-[56px] leading-[1.1] font-bold text-foreground mb-6 tracking-tight font-heading">
+          <motion.h1 variants={FADE_UP} className="text-[34px] sm:text-[56px] leading-[1.1] font-bold text-foreground mb-6 tracking-tight font-heading text-balance">
             Track every application.<br />Type nothing.
           </motion.h1>
           
@@ -209,7 +209,7 @@ export default function Landing() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handlePrimaryCta}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity shadow-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Get started free <ArrowRight className="w-4 h-4" />
             </motion.button>
@@ -217,7 +217,7 @@ export default function Landing() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={scrollToHowItWorks}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-3 px-6"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-3 px-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
             >
               See how it works <ArrowRight className="w-4 h-4" />
             </motion.button>
@@ -263,11 +263,13 @@ export default function Landing() {
                 <tbody className="divide-y divide-border">
                   {PREVIEW_ROWS.map((row, i) => (
                     <tr key={i} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-medium text-foreground flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-sm bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                          {row.company.charAt(0)}
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-sm bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
+                            {row.company.charAt(0)}
+                          </div>
+                          {row.company}
                         </div>
-                        {row.company}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{row.role}</td>
                       <td className="px-4 py-3 text-muted-foreground">{row.location}</td>
@@ -354,7 +356,7 @@ export default function Landing() {
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ duration: 0.5, delay: i * 0.05 }}
                   whileHover={{ y: -4 }}
-                  className="rounded-xl border border-border bg-card p-7 shadow-sm hover:shadow-card-hover dark:hover:shadow-card-dark-hover transition-shadow duration-300"
+                  className="rounded-xl border border-border bg-card p-5 md:p-7 shadow-sm hover:shadow-card-hover dark:hover:shadow-card-dark-hover transition-shadow duration-300"
                 >
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-5">
                     <Icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
@@ -376,7 +378,7 @@ export default function Landing() {
           viewport={{ once: true, margin: "-100px" }}
           variants={STAGGER}
         >
-          <motion.h2 variants={FADE_UP} className="text-[36px] font-bold tracking-tight text-foreground mb-4 font-heading">
+          <motion.h2 variants={FADE_UP} className="text-[32px] font-bold tracking-tight text-foreground mb-4 font-heading">
             Ready to stop losing track?
           </motion.h2>
           <motion.p variants={FADE_UP} className="text-muted-foreground mb-8 text-[16px] leading-relaxed">
@@ -387,7 +389,7 @@ export default function Landing() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handlePrimaryCta}
-            className="inline-flex items-center justify-center gap-1.5 px-8 py-4 rounded-full bg-primary text-primary-foreground text-[15px] font-medium hover:opacity-90 transition-opacity shadow-sm"
+            className="inline-flex items-center justify-center gap-1.5 px-8 py-4 rounded-full bg-primary text-primary-foreground text-[15px] font-medium hover:opacity-90 transition-opacity shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Get started now <ArrowRight className="w-4 h-4" />
           </motion.button>

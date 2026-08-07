@@ -32,7 +32,7 @@ export default function Settings() {
       {/* Profile */}
       <motion.div variants={item}>
         <Card title="Profile">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-[13px] font-medium text-muted-foreground overflow-hidden shrink-0">
               {user?.avatar_url ? (
                 <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
@@ -49,14 +49,14 @@ export default function Settings() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => clerk.openUserProfile()}
-                className="flex items-center gap-1.5 px-3 h-8 rounded-md bg-muted text-foreground text-[12px] font-medium hover:bg-accent transition-colors duration-150"
+                className="flex items-center gap-1.5 px-3 h-10 rounded-md bg-muted text-foreground text-[12px] font-medium hover:bg-accent transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <SettingsIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Manage Account
               </button>
               <button
                 onClick={() => logout()}
-                className="flex items-center gap-1.5 px-3 h-8 rounded-md border border-border text-muted-foreground text-[12px] font-medium hover:bg-muted transition-colors duration-150"
+                className="flex items-center gap-1.5 px-3 h-10 rounded-md border border-border text-muted-foreground text-[12px] font-medium hover:bg-muted transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Sign out

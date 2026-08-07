@@ -32,19 +32,19 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
       )}
     >
       {/* Logo */}
-      <Link 
+      <Link
         to="/dashboard"
         className={cn(
-          "h-14 flex items-center border-b border-border transition-colors duration-300 group hover:bg-muted/30 cursor-pointer",
+          "h-14 flex items-center border-b border-border transition-colors duration-200 group hover:bg-muted/30 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-inset",
           isCollapsed ? "justify-center px-0" : "px-5"
         )}
       >
-        <div className="flex items-center transition-transform duration-300 ease-out group-hover:scale-[1.04]">
+        <div className="flex items-center transition-transform duration-200 ease-out group-hover:scale-[1.04]">
           <Logo
             animated
             size="md"
             iconOnly={isCollapsed}
-            className="text-foreground/90 group-hover:text-foreground group-hover:brightness-110 transition-all duration-300 gap-2.5"
+            className="text-foreground/90 group-hover:text-foreground group-hover:brightness-110 transition-all duration-200 gap-2.5"
           />
         </div>
       </Link>
@@ -52,7 +52,9 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
       {/* Navigation */}
       <nav className={cn("flex-1 py-3 space-y-0.5", isCollapsed ? "px-2" : "px-2")}>
         {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive =
+            location.pathname === item.path ||
+            location.pathname.startsWith(item.path + "/");
           const Icon = item.icon;
           return (
             <Link
@@ -60,7 +62,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
               to={item.path}
               title={isCollapsed ? item.label : undefined}
               className={cn(
-                "relative flex items-center gap-2.5 rounded-md text-sidebar-item transition-colors duration-150",
+                "relative flex items-center gap-2.5 rounded-md text-sidebar-item transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-inset",
                 isCollapsed ? "justify-center px-0 py-2" : "px-2.5 py-[7px]",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
@@ -80,7 +82,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
       <div className={cn("py-3 border-t border-border", isCollapsed ? "px-2" : "px-2")}>
         <button
           onClick={onToggleCollapse}
-          className="w-full flex items-center justify-center gap-2 rounded-md px-2.5 py-[7px] text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors duration-150 text-sidebar-item"
+          className="w-full flex items-center justify-center gap-2 rounded-md px-2.5 py-[7px] text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors duration-150 text-sidebar-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-inset"
         >
           {isCollapsed ? (
             <ChevronsRight className="w-4 h-4" strokeWidth={1.5} />

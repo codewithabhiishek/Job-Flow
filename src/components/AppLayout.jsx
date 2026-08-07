@@ -22,11 +22,11 @@ export default function AppLayout() {
     setMobileSidebarOpen(false);
   }, [location.pathname]);
 
-  // Auto-collapse on smaller screens
+  // Auto-collapse on smaller screens (and restore when returning to desktop)
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023px)");
     const handler = (e) => {
-      if (e.matches) setSidebarCollapsed(true);
+      setSidebarCollapsed(e.matches);
     };
     handler(mq);
     mq.addEventListener("change", handler);
@@ -52,7 +52,7 @@ export default function AppLayout() {
   }, [activeModal]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       {/* Mobile overlay */}
       <AnimatePresence>
         {mobileSidebarOpen && (
@@ -67,19 +67,31 @@ export default function AppLayout() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar — desktop: normal flow; mobile: fixed overlay */}
-      <div className={mobileSidebarOpen ? "fixed inset-y-0 left-0 z-50 lg:relative lg:z-auto" : "hidden lg:flex"}>
+      {/* Sidebar — desktop: normal flow */}
+      <div className="hidden lg:flex">
         <Sidebar
-          isCollapsed={sidebarCollapsed && !mobileSidebarOpen}
-          onToggleCollapse={() => {
-            if (mobileSidebarOpen) {
-              setMobileSidebarOpen(false);
-            } else {
-              setSidebarCollapsed(!sidebarCollapsed);
-            }
-          }}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       </div>
+
+      {/* Sidebar — mobile: fixed drawer, slides in with the backdrop */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <motion.div
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-y-0 left-0 z-50 lg:hidden shadow-2xl"
+          >
+            <Sidebar
+              isCollapsed={false}
+              onToggleCollapse={() => setMobileSidebarOpen(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Header

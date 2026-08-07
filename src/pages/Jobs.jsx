@@ -51,7 +51,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn, formatLocation } from "@/lib/utils";
+import { cn, condenseSalary, formatLocation } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import EditJobModal from "@/components/modals/EditJobModal";
@@ -78,38 +78,6 @@ const COLS = [
 const TABLE_MIN_W = COLS.reduce((acc, c) => acc + parseInt(c.w.match(/\d+/)?.[0] || 0, 10), 0);
 
 const EDIT_COLS = COLS.filter((c) => c.edit).map((c) => c.key);
-
-// ─── Salary → single condensed token ─────────────────────────────────────────
-const condenseSalary = (raw) => {
-  if (!raw) return null;
-  const s = raw.toString().trim();
-  if (!s || /not\s*disclosed/i.test(s)) return null;
-
-  let period = "";
-  if (/\/(month|mo|monthly)/i.test(s)) period = "/mo";
-  else if (/\/(year|yr|annual|annum|pa)/i.test(s)) period = "/yr";
-  else if (/\/(hour|hr)/i.test(s)) period = "/hr";
-
-  const cur = (s.match(/[₹$€£¥]/) ?? [""])[0];
-
-  if (/lpa/i.test(s)) {
-    const m = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
-    return m ? `${cur}${parseFloat(m[1])}L` : null;
-  }
-
-  const m = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
-  if (!m) return s.length > 12 ? s.slice(0, 11) + "…" : s;
-
-  let n = parseFloat(m[1]);
-  // "$120k" / "₹60k" style salaries: the raw number already carries the "k" unit,
-  // so promote it to thousands before the thresholds below, otherwise the "k" is
-  // silently dropped and the value is displayed ~1000x too small.
-  if (s.match(/(\d+(?:\.\d+)?)\s*k\b/i)) n *= 1000;
-  if (n >= 1_000_000)
-    return `${cur}${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M${period}`;
-  if (n >= 1_000) return `${cur}${Math.round(n / 1_000)}k${period}`;
-  return `${cur}${n}${period}`;
-};
 
 // ─── Inline text cell ─────────────────────────────────────────────────────────
 function EditableText({
@@ -154,7 +122,7 @@ function RowAction({ icon: Icon, label, onClick, danger }) {
           aria-label={label}
           onClick={onClick}
           className={cn(
-            "w-6 h-6 rounded-md flex items-center justify-center transition-all duration-150",
+            "w-6 h-6 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95",
             "text-muted-foreground/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100",
             danger
               ? "hover:text-destructive hover:bg-destructive/10"
@@ -460,7 +428,7 @@ export default function Jobs() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-5 shrink-0">
         <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-foreground font-heading">
+          <h1 className="type-page-title text-foreground">
           Jobs
           </h1>
           <p className="hidden sm:block mt-1 text-[12px] text-muted-foreground">Keep every opportunity and next step in one calm, focused view.</p>
@@ -547,7 +515,7 @@ export default function Jobs() {
                         }
                         className={cn(
                           col.w,
-                          "group px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/90 select-none bg-muted/45 border-r border-border/60 last:border-r-0",
+                          "group px-4 py-3 type-table-head select-none bg-muted/45 border-r border-border/60 last:border-r-0",
                           col.align === "right" && "text-right",
                           col.sort &&
                             "cursor-pointer hover:text-muted-foreground/70 transition-colors",
@@ -588,14 +556,14 @@ export default function Jobs() {
 
               {/* Row count & Hints footer */}
               <div className="px-4 py-3 border-t border-border/40 flex items-center justify-between bg-muted/10 rounded-b-xl">
-                <div className="hidden lg:flex items-center gap-3 text-[12px] text-muted-foreground/60 font-medium tracking-tight">
+                <div className="hidden md:flex items-center gap-3 text-[12px] text-muted-foreground/60 font-medium tracking-tight">
                   <span className="flex items-center gap-1.5"><Pencil className="w-3 h-3 opacity-70" /> Double-click any cell to edit</span>
                   <span className="opacity-30">•</span>
                   <span>Hover a row for quick actions</span>
                   <span className="opacity-30">•</span>
                   <span>Press <kbd className="font-sans px-1.5 py-0.5 bg-muted rounded border border-border/50 text-[10px]">Enter</kbd> to edit</span>
                 </div>
-                <span className="text-[11.5px] text-muted-foreground/40 tabular-nums font-medium font-mono">
+                <span className="text-[11.5px] text-muted-foreground/70 tabular-nums font-medium font-mono">
                   {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
                   {statusFilter !== "all" && " · filtered"}
                 </span>
@@ -635,7 +603,7 @@ export default function Jobs() {
                         <CompanyAvatar
                           company={job.company}
                           logo={job.logo}
-                          size={32}
+                          size={28}
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
@@ -657,7 +625,7 @@ export default function Jobs() {
                                   updateJob(job.id, { status: v })
                                 }
                               >
-                                <SelectTrigger className="h-auto w-auto border-0 p-0 bg-transparent shadow-none focus:ring-0 [&>svg]:hidden">
+                                <SelectTrigger className="h-auto w-auto border-0 p-0 bg-transparent shadow-none [&>svg]:hidden">
                                   <StatusBadge status={job.status} />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover border-border">
@@ -676,7 +644,7 @@ export default function Jobs() {
                                 <DropdownMenuTrigger asChild>
                                   <button
                                     aria-label="Job actions"
-                                    className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors"
+                                    className="w-9 h-9 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted active:bg-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                   >
                                     <MoreHorizontal
                                       className="w-4 h-4"
@@ -688,15 +656,6 @@ export default function Jobs() {
                                   align="end"
                                   className="w-40 bg-popover border-border"
                                 >
-                                  <DropdownMenuItem
-                                    className="text-[12px] gap-2 cursor-pointer"
-                                    onSelect={() =>
-                                      startEdit(job.id, "company", job.company)
-                                    }
-                                  >
-                                    <Pencil className="w-3 h-3 opacity-50" />
-                                    Edit
-                                  </DropdownMenuItem>
                                   <DropdownMenuItem
                                     className="text-[12px] gap-2 cursor-pointer"
                                     onSelect={() => setEditTarget(job)}
@@ -742,19 +701,19 @@ export default function Jobs() {
                           <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
                             {job.location && (
                               <span
-                                className="text-[11.5px] text-muted-foreground/50 truncate"
+                                className="text-[11.5px] text-muted-foreground truncate min-w-0 max-w-[45%]"
                                 title={job.location}
                               >
                                 {formatLocation(job.location)}
                               </span>
                             )}
                             {sal && (
-                              <span className="text-[11.5px] tabular-nums text-muted-foreground/50 font-mono">
+                              <span className="text-[11.5px] tabular-nums text-muted-foreground font-mono shrink-0">
                                 {sal}
                               </span>
                             )}
                             {job.source && (
-                              <div className="scale-90 origin-left">
+                              <div className="scale-90 origin-left shrink-0">
                                 <SourceBadge source={job.source} />
                               </div>
                             )}
@@ -861,6 +820,7 @@ const JobTableRow = memo(
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2 }}
         onClick={() => setSelectedRow(job.id)}
+        onFocus={() => setSelectedRow(job.id)}
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -882,7 +842,7 @@ const JobTableRow = memo(
           onDoubleClick={() => startEdit(job.id, "company", job.company)}
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <CompanyAvatar company={job.company} logo={job.logo} size={26} />
+            <CompanyAvatar company={job.company} logo={job.logo} size={28} />
 
             <div className="flex-1 min-w-0">
               {cellEditing(job.id, "company") ? (
@@ -966,7 +926,7 @@ const JobTableRow = memo(
             value={job.status}
             onValueChange={(v) => updateJob(job.id, { status: v })}
           >
-            <SelectTrigger className="h-auto w-full border-0 p-0 bg-transparent shadow-none focus:ring-0 [&>svg]:hidden flex justify-start">
+            <SelectTrigger className="h-auto w-full border-0 p-0 bg-transparent shadow-none [&>svg]:hidden flex justify-start">
               <StatusBadge status={job.status} />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">

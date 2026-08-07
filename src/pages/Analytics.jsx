@@ -119,7 +119,7 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 lg:p-8  space-y-6 max-w-[1200px]">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1200px]">
         <Skeleton className="h-7 w-28" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -145,7 +145,7 @@ export default function Analytics() {
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-4 md:p-6 lg:p-8  space-y-5 max-w-[1200px]">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1200px]">
       <motion.div variants={item}>
         <h1 className="type-page-title text-foreground">Analytics</h1>
       </motion.div>
@@ -162,23 +162,27 @@ export default function Analytics() {
       <motion.div variants={item}>
         <ChartCard title="Applications Over Time">
           {timelineData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={timelineData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="week" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} tickLine={false} axisLine={false} width={30} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    color: "hsl(var(--popover-foreground))",
-                  }}
-                />
-                <Line type="monotone" dataKey="count" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-1))", r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            <div role="img" aria-label={`Line chart of applications per week: ${timelineData.map((d) => `${d.week}: ${d.count}`).join(", ")}`}>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={timelineData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="week" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} tickLine={false} axisLine={false} width={30} />
+                  <Tooltip
+                    cursor={{ stroke: "hsl(var(--border))" }}
+                    animationDuration={150}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      color: "hsl(var(--popover-foreground))",
+                    }}
+                  />
+                  <Line type="monotone" dataKey="count" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-1))", r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             <EmptyChart />
           )}
@@ -189,23 +193,27 @@ export default function Analytics() {
       <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <ChartCard title="Pipeline">
           {pipelineData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={pipelineData} layout="vertical" margin={{ left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                <YAxis dataKey="status" type="category" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} width={90} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    color: "hsl(var(--popover-foreground))",
-                  }}
-                />
-                <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div role="img" aria-label={`Bar chart of applications by stage: ${pipelineData.map((d) => `${d.status}: ${d.count}`).join(", ")}`}>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={pipelineData} layout="vertical" margin={{ left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <YAxis dataKey="status" type="category" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} width={96} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted))" }}
+                    animationDuration={150}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      color: "hsl(var(--popover-foreground))",
+                    }}
+                  />
+                  <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             <EmptyChart />
           )}
@@ -226,7 +234,7 @@ export default function Analytics() {
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${(count / max) * 100}%` }}
-                        transition={{ duration: 0.5, delay: i * 0.05 }}
+                        transition={{ duration: 0.2, delay: i * 0.05 }}
                         className="h-full bg-chart-1 rounded-full"
                       />
                     </div>
@@ -268,7 +276,7 @@ export default function Analytics() {
 
 function StatCard({ label, value, suffix = "" }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4 shadow-card dark:shadow-card-dark">
+    <div className="rounded-lg border border-border bg-card p-4 shadow-card dark:shadow-card-dark hover:shadow-card-hover dark:hover:shadow-card-dark-hover transition-shadow duration-150">
       <p className="text-[12px] font-medium text-muted-foreground mb-1">{label}</p>
       <p className="text-[22px] font-semibold text-foreground tracking-tight">
         <AnimatedCounter value={value} suffix={suffix} />

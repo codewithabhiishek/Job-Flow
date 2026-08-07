@@ -109,7 +109,7 @@ export default function Register() {
         subtitle={`We sent a code to ${email}`}
       >
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          <div role="alert" className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
             {error}
           </div>
         )}
@@ -182,14 +182,14 @@ export default function Register() {
     >
       <Button
         variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
+        className="w-full h-12 text-sm font-medium mb-6 [&_svg]:size-5"
         onClick={handleGoogle}
         disabled={googleLoading}
       >
         {googleLoading ? (
-          <Loader2 className="w-5 h-5 mr-2 animate-spin text-muted-foreground" />
+          <Loader2 className="animate-spin text-muted-foreground" />
         ) : (
-          <GoogleIcon className="w-5 h-5 mr-2" />
+          <GoogleIcon />
         )}
         {googleLoading ? "Connecting..." : "Continue with Google"}
       </Button>
@@ -204,7 +204,7 @@ export default function Register() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div role="alert" className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           {error}
         </div>
       )}

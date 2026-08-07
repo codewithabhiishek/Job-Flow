@@ -85,7 +85,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-6 max-w-[1400px]">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-4 md:p-6 lg:p-8 max-w-[1400px]">
       <motion.div variants={itemAnim} className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="type-label mb-1">Schedule</h2>
@@ -96,19 +96,21 @@ export default function CalendarPage() {
         <div className="flex items-center gap-1.5">
           <button
             onClick={prevMonth}
-            className="w-8 h-8 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
+            aria-label="Previous month"
+            className="w-10 h-10 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
           </button>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-3 h-8 rounded-md border border-border text-muted-foreground text-[12px] font-medium hover:bg-muted transition-colors"
+            className="px-3 h-10 rounded-md border border-border text-muted-foreground text-[12px] font-medium hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Today
           </button>
           <button
             onClick={nextMonth}
-            className="w-8 h-8 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
+            aria-label="Next month"
+            className="w-10 h-10 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
           </button>
@@ -118,7 +120,7 @@ export default function CalendarPage() {
       <motion.div variants={itemAnim} className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="grid grid-cols-7 border-b border-border bg-muted/30">
           {DAYS.map((day) => (
-            <div key={day} className="px-3 py-2.5 text-center type-table-head">
+            <div key={day} className="px-1 py-2 sm:px-3 sm:py-2.5 text-center type-table-head">
               {day}
             </div>
           ))}
@@ -130,7 +132,7 @@ export default function CalendarPage() {
               <div
                 key={i}
                 className={cn(
-                  "min-h-[110px] border-r border-b border-border p-2",
+                  "min-h-[72px] sm:min-h-[110px] border-r border-b border-border p-1 sm:p-2",
                   !day && "bg-muted/20",
                   (i + 1) % 7 === 0 && "border-r-0",
                   i >= cells.length - 7 && "border-b-0"
@@ -158,7 +160,7 @@ export default function CalendarPage() {
                           <div
                             key={job.id}
                             className={cn(
-                              "text-[11px] px-1.5 py-0.5 rounded truncate font-medium",
+                              "text-[11px] px-1.5 py-1 sm:py-0.5 rounded truncate font-medium",
                               isInterview
                                 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                                 : "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",

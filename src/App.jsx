@@ -1,4 +1,5 @@
 import { Toaster } from "sonner";
+import { MotionConfig } from "framer-motion";
 import { ThemeProvider, useTheme } from "@/components/ThemeProvider";
 import LoadingScreen from "@/components/LoadingScreen";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -70,7 +71,7 @@ const AuthenticatedApp = () => {
 
 function RouteSkeleton() {
   return (
-    <div className="h-screen w-screen bg-background p-5 sm:p-8" aria-busy="true" aria-label="Loading page">
+    <div className="h-dvh w-screen bg-background p-5 sm:p-8" aria-busy="true" aria-label="Loading page">
       <div className="h-10 w-full max-w-xl animate-pulse rounded-lg bg-muted/70" />
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         {[0, 1, 2].map((item) => <div key={item} className="h-28 animate-pulse rounded-xl bg-muted/50" />)}
@@ -87,7 +88,7 @@ const AppToaster = () => {
       position="bottom-right" 
       theme={theme === 'system' ? 'system' : theme}
       toastOptions={{
-        className: "bg-background border border-border/60 text-foreground shadow-premium dark:shadow-premium-dark rounded-[10px]"
+        className: "bg-background border border-border/60 text-foreground shadow-card-hover dark:shadow-card-dark-hover rounded-[10px]"
       }}
     />
   );
@@ -96,15 +97,17 @@ const AppToaster = () => {
 function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="jobflow-theme">
-      <AuthProvider>
-        <QueryClientProvider client={queryClientInstance}>
-          <Router>
-            <ScrollToTop />
-            <AuthenticatedApp />
-          </Router>
-          <AppToaster />
-        </QueryClientProvider>
-      </AuthProvider>
+      <MotionConfig reducedMotion="user">
+        <AuthProvider>
+          <QueryClientProvider client={queryClientInstance}>
+            <Router>
+              <ScrollToTop />
+              <AuthenticatedApp />
+            </Router>
+            <AppToaster />
+          </QueryClientProvider>
+        </AuthProvider>
+      </MotionConfig>
     </ThemeProvider>
   );
 }

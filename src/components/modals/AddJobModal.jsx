@@ -253,7 +253,7 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
                   whileHover={{ scale: 1.01, backgroundColor: isActive ? "" : "rgba(255,255,255,0.03)" }}
                   whileTap={{ scale: 0.98 }}
                   className={cn(
-                    "flex-1 relative flex items-center justify-center gap-2.5 py-2.5 rounded-[10px] transition-colors duration-200 outline-none cursor-pointer",
+                    "flex-1 relative flex items-center justify-center gap-2.5 py-2.5 rounded-[10px] transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer",
                     isActive ? "text-foreground font-semibold" : "text-muted-foreground font-normal hover:text-foreground/90"
                   )}
                 >
@@ -272,7 +272,7 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
                       )} 
                       strokeWidth={isActive ? 2.5 : 2} 
                     />
-                    <span className="text-[14px] leading-none">{tab.label}</span>
+                    <span className="text-[14px] leading-none hidden sm:inline">{tab.label}</span>
                   </span>
                 </motion.button>
               );
@@ -288,7 +288,7 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.12 }}
+              transition={{ duration: 0.18 }}
               className="h-full flex-1 flex flex-col justify-center"
             >
               {activeTab === "screenshot" && (

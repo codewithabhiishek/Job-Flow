@@ -145,7 +145,7 @@ export default function EditJobModal({ job, open, onOpenChange }) {
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Company" value={data.company} onChange={(v) => update("company", v)} required />
             <Field label="Job Title" value={data.job_title} onChange={(v) => update("job_title", v)} required />
             <Field label="Location" value={data.location} onChange={(v) => update("location", v)} />
@@ -160,7 +160,7 @@ export default function EditJobModal({ job, open, onOpenChange }) {
             <Field label="Interview Date" value={data.interview_date} onChange={(v) => update("interview_date", v)} type="date" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="type-label mb-1 block">Work mode</label>
               <Select

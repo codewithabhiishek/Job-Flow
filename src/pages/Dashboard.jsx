@@ -34,7 +34,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 lg:p-8 ">
+      <div className="p-4 md:p-6 lg:p-8">
         <SkeletonGrid />
       </div>
     );
@@ -95,7 +95,7 @@ export default function Dashboard() {
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-4 md:p-6 lg:p-8  space-y-6 max-w-[1200px]">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1200px]">
       <motion.div variants={item}>
         <h1 className="type-page-title text-foreground">Overview</h1>
       </motion.div>
@@ -119,7 +119,7 @@ export default function Dashboard() {
             {recent.map((job) => (
               <div
                 key={job.id}
-                className="px-4 py-3 flex items-center justify-between hover:bg-muted/40 transition-colors duration-150"
+                className="px-4 py-3 flex items-center justify-between"
               >
                 <div className="min-w-0 flex-1 mr-3">
                   <p className="text-[13px] text-foreground font-medium truncate">
@@ -229,7 +229,7 @@ function Onboarding({ openAddJob }) {
 
 function MetricCard({ label, value, icon: Icon }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4 shadow-card dark:shadow-card-dark">
+    <div className="rounded-lg border border-border bg-card p-4 shadow-card dark:shadow-card-dark hover:shadow-card-hover dark:hover:shadow-card-dark-hover transition-shadow duration-150">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[12px] font-medium text-muted-foreground">{label}</span>
         <Icon className="w-3.5 h-3.5 text-muted-foreground/60" strokeWidth={1.5} />
