@@ -41,6 +41,9 @@ export default function CalendarPage() {
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  // Pad to full weeks so every grid row has 7 cells — without this the last
+  // row renders unboxed empty space and border math below breaks.
+  while (cells.length % 7 !== 0) cells.push(null);
 
   const eventsForDay = (day) => {
     if (!day) return [];
@@ -132,8 +135,11 @@ export default function CalendarPage() {
               <div
                 key={i}
                 className={cn(
-                  "min-h-[72px] sm:min-h-[110px] border-r border-b border-border p-1 sm:p-2",
+                  "min-h-[72px] sm:min-h-[110px] border-r border-b border-border p-1 sm:p-2 transition-colors duration-200",
                   !day && "bg-muted/20",
+                  day && "hover:bg-muted/40",
+                  day && (i % 7 === 0 || i % 7 === 6) && "bg-muted/10",
+                  day && isToday(day) && "ring-1 ring-inset ring-chart-1/50",
                   (i + 1) % 7 === 0 && "border-r-0",
                   i >= cells.length - 7 && "border-b-0"
                 )}
