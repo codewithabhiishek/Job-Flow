@@ -61,7 +61,8 @@ export default function Kanban() {
     const destStatus = result.destination.droppableId;
     if (sourceStatus === destStatus) return;
 
-    const jobId = result.draggableId;
+    // draggableId is a string (dnd requirement); the DB id is numeric — coerce back
+    const jobId = Number(result.draggableId);
     updateMutation.mutate({ id: jobId, patch: { status: destStatus } });
   };
 
@@ -124,7 +125,7 @@ export default function Kanban() {
                     )}
                   >
                     {col.jobs.map((job, index) => (
-                      <Draggable key={job.id} draggableId={job.id} index={index}>
+                      <Draggable key={job.id} draggableId={String(job.id)} index={index}>
                         {(dragProvided, dragSnapshot) => (
                           <div
                             ref={dragProvided.innerRef}
