@@ -18,6 +18,9 @@ const TABS = [
   { id: "text", label: "Description", icon: ClipboardPaste },
 ];
 
+const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_INPUT_FILE_MB = 20;
+
 export default function AddJobModal({ open, defaultTab = "screenshot", onOpenChange, onExtract }) {
   // Always initialise to "screenshot" — never rely on a useEffect to set this
   // after the first render, which causes the dropzone to flash invisible.
@@ -33,6 +36,31 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
   const [text, setText] = useState("");
 
   const [loading, setLoading] = useState(false);
+
+  // Tracks whether the dialog is still open across async work, so a completed
+  // extraction never re-opens the Review modal after the user already closed it.
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
+  // Client-side file guard: validate type and size before compression so we never
+  // read an unsupported/huge file into memory or surface a confusing canvas error.
+  const handleFileChange = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!ACCEPTED_TYPES.includes(f.type)) {
+      toast.error("Unsupported file type", { description: "Please upload a PNG, JPG, or WEBP screenshot." });
+      e.target.value = "";
+      return;
+    }
+    if (f.size > MAX_INPUT_FILE_MB * 1024 * 1024) {
+      toast.error("File too large", { description: `Please upload a screenshot under ${MAX_INPUT_FILE_MB} MB.` });
+      e.target.value = "";
+      return;
+    }
+    setFile(f);
+  };
 
   // When the modal re-opens, reset to the correct default tab.
   // We track the PREVIOUS open value so we only fire on the false→true transition,
@@ -117,16 +145,20 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
   };
 
   const handleExtract = async () => {
+    // Button is disabled when empty, but guard defensively so we never leave
+    // the loading state stuck on an empty submission.
+    if (!canExtract()) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     let payload = null;
     let method = activeTab;
 
     try {
       if (activeTab === "screenshot") {
-        if (!file) return;
         payload = await toBase64(file);
       } else if (activeTab === "url") {
-        if (!url.trim()) return;
         try {
           new URL(url);
         } catch {
@@ -136,7 +168,6 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
         }
         payload = url;
       } else if (activeTab === "text") {
-        if (!text.trim()) return;
         payload = text;
       }
 
@@ -165,12 +196,14 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
 
       // The API applies canonical source detection and normalization to every input type.
       console.log("[DEBUG] Payload prepared for onExtract:", extractedPayload);
-      
-      // Pass data to AppLayout to open ReviewJobModal
-      console.log("[DEBUG] Calling onExtract...");
-      onExtract(extractedPayload);
-      console.log("[DEBUG] onExtract called successfully.");
-      
+
+      // Pass data to AppLayout to open ReviewJobModal — but only if this dialog
+      // is still open (the user may have closed it during the network call).
+      if (openRef.current) {
+        console.log("[DEBUG] Calling onExtract...");
+        onExtract(extractedPayload);
+      }
+
       // Clean up local state for the next time it opens
       setFile(null);
       setUrl("");
@@ -282,11 +315,11 @@ export default function AddJobModal({ open, defaultTab = "screenshot", onOpenCha
                         </div>
                       </>
                     )}
-                    <input 
-                      type="file" 
-                      accept="image/png, image/jpeg, image/jpg, image/webp" 
-                      className="hidden" 
-                      onChange={(e) => setFile(e.target.files?.[0])} 
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      className="hidden"
+                      onChange={handleFileChange}
                     />
                   </label>
                 </div>

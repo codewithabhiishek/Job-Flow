@@ -108,6 +108,23 @@ export class UrlExtractor {
    * redirect hop so a redirect chain cannot be used to reach internal networks
    * after the initial check (DNS-rebinding / redirect SSRF).
    */
+  /**
+   * True when an IP (v4 or v6, including IPv4-mapped IPv6 like ::ffff:10.0.0.1)
+   * resolves to a private, loopback, link-local, or ULA range.
+   */
+  isPrivateIp(ip) {
+    const lower = ip.toLowerCase();
+    // IPv4-mapped IPv6 (::ffff:a.b.c.d) — test the embedded IPv4.
+    const mapped = lower.match(/^::ffff:(.+)$/);
+    if (mapped) return /^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|169\.254\.|0\.0\.0\.0)/.test(mapped[1]);
+    if (/^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|169\.254\.|0\.0\.0\.0)/.test(lower)) return true;
+    // IPv6 loopback, unspecified, link-local (fe80::/10), ULA (fc00::/7), and site-local (fec0::/10).
+    return (
+      lower === '::1' || lower === '::' || lower === '0:0:0:0:0:0:0:1' ||
+      lower.startsWith('fe80:') || lower.startsWith('fc') || lower.startsWith('fd') || lower.startsWith('fec0:')
+    );
+  }
+
   async assertSafeUrl(urlStr) {
     let u;
     try {
@@ -125,14 +142,23 @@ export class UrlExtractor {
     }
 
     try {
-      const addresses = await dns.resolve(u.hostname);
+      // Resolve both A (IPv4) and AAAA (IPv6) so a host can't smuggle a private
+      // IPv6 address past a v4-only check, and catch IPv4-mapped ranges too.
+      const [v4 = [], v6 = []] = await Promise.all([
+        dns.resolve4(u.hostname).catch(() => []),
+        dns.resolve6(u.hostname).catch(() => []),
+      ]);
+      const addresses = [...v4, ...v6];
+      if (addresses.length === 0) {
+        throw new Error("Failed to resolve hostname or invalid domain.");
+      }
       for (const ip of addresses) {
-        if (/^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|169\.254\.|0\.0\.0\.0)/.test(ip) || ip === '::1' || ip === '0:0:0:0:0:0:0:1') {
+        if (this.isPrivateIp(ip)) {
           throw new Error("Access to private or internal network addresses is forbidden.");
         }
       }
     } catch (err) {
-      if (err.message.includes("forbidden")) throw err;
+      if (err.message.includes("forbidden") || err.message.includes("Failed to resolve hostname")) throw err;
       throw new Error("Failed to resolve hostname or invalid domain.");
     }
   }
@@ -226,20 +252,20 @@ export class UrlExtractor {
     const cleanText = this.cleanHtml($);
     
     // 5. Construct final prompt string to send to AI
-    let structuredPayload = "Job URL: " + current + "\\n\\n";
+    let structuredPayload = "Job URL: " + current + "\n\n";
     
     if (jsonLd) {
-      structuredPayload += "=== STRUCTURED METADATA ===\\n";
-      if (jsonLd.title) structuredPayload += `Title: ${jsonLd.title}\\n`;
-      if (jsonLd.hiringOrganization?.name) structuredPayload += `Company: ${jsonLd.hiringOrganization.name}\\n`;
-      if (jsonLd.jobLocation) structuredPayload += `Location: ${JSON.stringify(jsonLd.jobLocation)}\\n`;
-      if (jsonLd.employmentType) structuredPayload += `Employment Type: ${jsonLd.employmentType}\\n`;
-      if (jsonLd.baseSalary) structuredPayload += `Salary: ${JSON.stringify(jsonLd.baseSalary)}\\n`;
-      if (jsonLd.validThrough) structuredPayload += `Deadline: ${jsonLd.validThrough}\\n`;
-      structuredPayload += "===========================\\n\\n";
+      structuredPayload += "=== STRUCTURED METADATA ===\n";
+      if (jsonLd.title) structuredPayload += `Title: ${jsonLd.title}\n`;
+      if (jsonLd.hiringOrganization?.name) structuredPayload += `Company: ${jsonLd.hiringOrganization.name}\n`;
+      if (jsonLd.jobLocation) structuredPayload += `Location: ${JSON.stringify(jsonLd.jobLocation)}\n`;
+      if (jsonLd.employmentType) structuredPayload += `Employment Type: ${jsonLd.employmentType}\n`;
+      if (jsonLd.baseSalary) structuredPayload += `Salary: ${JSON.stringify(jsonLd.baseSalary)}\n`;
+      if (jsonLd.validThrough) structuredPayload += `Deadline: ${jsonLd.validThrough}\n`;
+      structuredPayload += "===========================\n\n";
     }
     
-    structuredPayload += "=== PAGE CONTENT ===\\n";
+    structuredPayload += "=== PAGE CONTENT ===\n";
     // Truncate text if it's absurdly long to prevent token overflow
     structuredPayload += cleanText.substring(0, 15000);
     

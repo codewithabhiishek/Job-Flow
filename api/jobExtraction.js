@@ -117,13 +117,31 @@ export function normalizeUrl(value) {
 export function normalizeDeadline(value) {
   const date = clean(value);
   if (!date) return EMPTY;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T00:00:00Z`))) return date;
+  // Exact calendar date, optionally carrying a time (ISO datetime or "2025-03-01 12:00").
+  const iso = date.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+  if (iso) {
+    const [, y, m, d] = iso;
+    const normalized = `${y}-${m}-${d}`;
+    if (!Number.isNaN(Date.parse(`${normalized}T00:00:00Z`))) return normalized;
+  }
   // Ambiguous relative dates ("in 3 days", "ASAP") must never be invented.
   const explicit = date.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
   if (!explicit) return EMPTY;
   const [, day, month, year] = explicit;
   const normalized = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   return Number.isNaN(Date.parse(`${normalized}T00:00:00Z`)) ? EMPTY : normalized;
+}
+
+// Accept an array of skills, or a delimited string (commas, bullets, pipes, semicolons).
+export function normalizeSkills(value) {
+  if (typeof value === "string") {
+    value = value.split(/[,;•|]/).map((s) => s.trim()).filter(Boolean);
+  }
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((s) => (typeof s === "string" ? s.replace(/\s+/g, " ").trim() : ""))
+    .filter(Boolean)
+    .slice(0, 50);
 }
 
 export function normalizeJobExtraction(raw = {}, context = {}) {
@@ -141,7 +159,8 @@ export function normalizeJobExtraction(raw = {}, context = {}) {
     employment_type: accepted("employment_type") ? normalizeEmploymentType(raw.employment_type) : EMPTY,
     deadline: accepted("deadline") ? normalizeDeadline(raw.deadline) : EMPTY,
     job_url: url,
-    confidence: Object.fromEntries(["company", "job_title", "location", "salary", "source", "work_mode", "employment_type", "deadline", "job_url"].map((key) => [key, Math.max(0, Math.min(100, Number(confidence[key] || 0)))])),
+    skills: accepted("skills") ? normalizeSkills(raw.skills) : [],
+    confidence: Object.fromEntries(["company", "job_title", "location", "salary", "source", "work_mode", "employment_type", "deadline", "job_url", "skills"].map((key) => [key, Math.max(0, Math.min(100, Number(confidence[key] || 0)))])),
   };
   if (url) result.confidence.source = 100;
   if (url) result.confidence.job_url = 100;

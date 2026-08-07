@@ -4,7 +4,7 @@ import { normalizeJobExtraction, validateJobExtraction } from "./jobExtraction.j
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
-const FIELDS = ["company", "job_title", "location", "salary", "source", "work_mode", "employment_type", "deadline", "job_url"];
+const FIELDS = ["company", "job_title", "location", "salary", "source", "work_mode", "employment_type", "deadline", "job_url", "skills"];
 const confidenceProperties = Object.fromEntries(FIELDS.map((field) => [field, { type: "integer", minimum: 0, maximum: 100 }]));
 
 const JOB_JSON_SCHEMA = {
@@ -16,6 +16,7 @@ const JOB_JSON_SCHEMA = {
       company: { type: "string" }, job_title: { type: "string" }, location: { type: "string" },
       salary: { type: "string" }, source: { type: "string" }, work_mode: { type: "string" },
       employment_type: { type: "string" }, deadline: { type: "string" }, job_url: { type: "string" },
+      skills: { type: "array", items: { type: "string" }, maxItems: 50 },
       confidence: { type: "object", properties: confidenceProperties, required: FIELDS, additionalProperties: false },
     },
     required: [...FIELDS, "confidence"],
@@ -30,6 +31,7 @@ Extract only facts explicitly shown. Never infer or invent company, job title, s
 Ignore recruiters, company descriptions, responsibilities, requirements, benefits, privacy/cookie text, navigation, adverts, related jobs, and long paragraphs.
 Company and job_title are the only required tracking fields. For every field give confidence 0-100. Use 0 when absent or unclear; any confidence below 50 will be discarded.
 Use work_mode only: Remote, Hybrid, On-site, or empty. Use employment_type only: Internship, Full-time, Part-time, Contract, Freelance, or empty. Return deadline as YYYY-MM-DD only when the exact calendar date is explicit; otherwise use empty.
+Extract skills as a concise array of up to 20 short, explicit hard/soft skills named in the posting (e.g. ["React", "TypeScript", "AWS"]). Do not invent skills; use an empty array when none are explicitly listed.
 Use a visible URL only for job_url. Use a visible platform/branding only for source. Do not call a generic site "Unknown" unless no platform/domain/branding is available.
 Return JSON only.`;
 
@@ -54,7 +56,18 @@ export class AIProvider {
         clearTimeout(timeoutId);
         if (!response.ok) throw new Error(`NVIDIA API returned ${response.status}`);
         const content = (await response.json())?.choices?.[0]?.message?.content;
-        const parsed = JSON.parse(content);
+        if (typeof content !== "string" || !content.trim()) {
+          throw new Error("AI returned no extractable content.");
+        }
+        let parsed;
+        try {
+          parsed = JSON.parse(content);
+        } catch {
+          throw new Error("AI returned invalid JSON.");
+        }
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("AI returned an unexpected response shape.");
+        }
         const result = normalizeJobExtraction(parsed, { ...context, text: context.text || (type === "text" ? payload : "") });
         return { ...result, validation: validateJobExtraction(result) };
       } catch (error) {
