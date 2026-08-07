@@ -1,6 +1,6 @@
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
-import { formatLocation } from "@/lib/utils";
+import { cn, formatLocation } from "@/lib/utils";
 import {
   Building2,
   Send,
@@ -9,15 +9,32 @@ import {
   Camera,
   Link2,
   ClipboardPaste,
-  CalendarX2, Inbox,
+  CalendarX2, Inbox, Calendar,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import StatusBadge from "@/components/StatusBadge";
+import CompanyAvatar from "@/components/CompanyAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 
+// ─── Interview date helpers ──────────────────────────────────────────────────
+function daysUntil(dateStr) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((new Date(dateStr + "T00:00:00") - today) / 86400000);
+}
+
+function dayBadge(dateStr) {
+  const d = daysUntil(dateStr);
+  if (d < 0) return { label: "Missed", className: "bg-red-500/10 text-red-700 dark:text-red-400" };
+  if (d === 0) return { label: "Today", className: "bg-amber-500/10 text-amber-700 dark:text-amber-400" };
+  if (d === 1) return { label: "Tomorrow", className: "bg-blue-500/10 text-blue-700 dark:text-blue-400" };
+  return null;
+}
+
 export default function Dashboard() {
   const { searchQuery, openAddJob } = useOutletContext();
+  const navigate = useNavigate();
   const { data: jobs = [], isLoading: loading } = useQuery({
     queryKey: ['jobs'],
     queryFn: () => apiClient.fetchApi('/jobs'),
@@ -143,29 +160,84 @@ export default function Dashboard() {
         </div>
 
         {/* Upcoming Interviews */}
-        <div className="lg:col-span-2 rounded-lg border border-border bg-card">
-          <div className="px-4 py-3 border-b border-border">
+        <div className="lg:col-span-2 rounded-lg border border-border bg-card flex flex-col">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
             <h3 className="type-card-title text-card-foreground">Upcoming Interviews</h3>
+            {upcoming.length > 0 && (
+              <span className="text-[11px] font-medium text-muted-foreground tnum font-mono">
+                {upcoming.length}
+              </span>
+            )}
           </div>
-          <div className="p-4">
+          <div className="p-4 flex-1 flex flex-col">
             {upcoming.length === 0 ? (
-              <div className="text-center py-8 flex flex-col items-center">
-                <CalendarX2 className="w-5 h-5 text-muted-foreground/40 mb-2" strokeWidth={1.5} />
-                <p className="text-[13px] text-muted-foreground">No interviews scheduled</p>
+              <div className="flex-1 text-center flex flex-col items-center justify-center py-8">
+                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                  <CalendarX2 className="w-5 h-5 text-muted-foreground/50" strokeWidth={1.5} />
+                </div>
+                <p className="text-[13px] font-medium text-foreground">No interviews scheduled</p>
+                <p className="text-[12px] text-muted-foreground mt-1 mb-4 max-w-[240px]">
+                  Your next interview will appear here once you add a date to a job.
+                </p>
+                <button
+                  onClick={() => navigate("/calendar")}
+                  className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md border border-border text-[12px] font-medium text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                  Open Calendar
+                </button>
               </div>
             ) : (
-              <div className="space-y-3">
-                {upcoming.map((job) => (
-                  <div key={job.id} className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1 mr-3">
-                      <p className="text-[13px] font-medium text-foreground truncate">{job.company}</p>
-                      <p className="text-[12px] text-muted-foreground truncate">{job.job_title}</p>
-                    </div>
-                    <span className="text-[12px] font-medium text-foreground bg-muted px-2 py-1 rounded-md shrink-0 tnum">
-                      {new Date(job.interview_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                {upcoming.map((job, i) => {
+                  const badge = dayBadge(job.interview_date);
+                  return (
+                    <motion.button
+                      key={job.id}
+                      type="button"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: i * 0.05 }}
+                      onClick={() => navigate("/jobs")}
+                      className={cn(
+                        "w-full text-left flex items-center gap-3 rounded-lg border border-transparent px-2.5 py-2 transition-[background-color,border-color,box-shadow] duration-200",
+                        "hover:bg-muted/40 hover:border-border hover:shadow-card dark:hover:shadow-card-dark",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      )}
+                    >
+                      <CompanyAvatar company={job.company} logo={job.logo} size={28} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13px] font-medium text-foreground truncate">{job.company}</p>
+                          {badge && (
+                            <span className={cn("shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded", badge.className)}>
+                              {badge.label}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-muted-foreground truncate mt-0.5">
+                          {job.job_title || "Interview"}
+                          {job.location && <> · {job.remote ? "Remote" : formatLocation(job.location)}</>}
+                        </p>
+                        {job.notes && (
+                          <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5 italic">
+                            {job.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-[12px] font-medium text-foreground tnum font-mono">
+                          {new Date(job.interview_date + "T00:00:00").toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </p>
+                        {daysUntil(job.interview_date) > 1 && (
+                          <p className="text-[10.5px] text-muted-foreground/70 tnum font-mono mt-0.5">
+                            {daysUntil(job.interview_date)}d left
+                          </p>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
               </div>
             )}
           </div>

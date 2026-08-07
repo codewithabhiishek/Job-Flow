@@ -542,13 +542,13 @@ export default function Jobs() {
               </div>
 
               {/* Row count & Hints footer */}
-              <div className="px-4 py-2.5 border-t border-border flex items-center justify-between bg-muted/30 rounded-b-xl">
-                <div className="hidden md:flex items-center gap-3 text-[12px] text-muted-foreground/70 font-medium tracking-tight">
-                  <span className="flex items-center gap-1.5"><Pencil className="w-3 h-3 opacity-70" /> Double-click any cell to edit</span>
-                  <span className="opacity-30">•</span>
+              <div className="px-4 py-3 border-t border-border flex items-center justify-between bg-muted/30 rounded-b-xl">
+                <div className="hidden md:flex items-center gap-5 text-[12px] text-muted-foreground font-medium">
+                  <span className="flex items-center gap-1.5"><Pencil className="w-3 h-3 opacity-60 shrink-0" /> Double-click a cell to edit</span>
+                  <span className="text-border select-none" aria-hidden="true">•</span>
                   <span>Hover a row for quick actions</span>
-                  <span className="opacity-30">•</span>
-                  <span>Press <kbd className="font-sans px-1.5 py-0.5 bg-card rounded border border-border text-[10px] shadow-sm">Enter</kbd> to edit</span>
+                  <span className="text-border select-none" aria-hidden="true">•</span>
+                  <span className="flex items-center gap-1.5">Press <kbd className="font-sans px-1.5 py-px bg-card rounded border border-border text-[10px] leading-4 shadow-sm inline-flex items-center">Enter</kbd> to edit</span>
                 </div>
                 <span className="text-[11.5px] text-muted-foreground tabular-nums font-medium font-mono">
                   {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
