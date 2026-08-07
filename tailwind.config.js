@@ -62,12 +62,12 @@ module.exports = {
   			}
   		},
   		fontFamily: {
-  			sans: ['Manrope', 'system-ui', 'sans-serif'],
+  			sans: ['Geist Sans', 'system-ui', 'sans-serif'],
   			mono: ['monospace']
   		},
       fontSize: {
-        'page-title': ['24px', { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '700' }],
-        'section-title': ['18px', { lineHeight: '1.3', letterSpacing: '-0.015em', fontWeight: '600' }],
+        'page-title': ['24px', { lineHeight: '1.2', letterSpacing: '-0.03em', fontWeight: '700' }],
+        'section-title': ['18px', { lineHeight: '1.3', letterSpacing: '-0.02em', fontWeight: '600' }],
         'card-title': ['14px', { lineHeight: '1.4', letterSpacing: '-0.01em', fontWeight: '600' }],
         'body-base': ['14px', { lineHeight: '1.5', letterSpacing: '-0.005em', fontWeight: '400' }],
         'body-sm': ['13px', { lineHeight: '1.5', letterSpacing: '-0.005em', fontWeight: '400' }],
